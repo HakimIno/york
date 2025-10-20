@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useEffect, useCallback, useMemo } from 'react';
+import React, { useEffect, useCallback, useMemo } from "react";
 import {
   useWasmEngine,
   useTemplateManager,
@@ -13,29 +13,25 @@ import {
   useUndoRedoHandlers,
   useGlobalEventHandlers,
   useWasmInitialization,
-} from './hooks';
-import { useWasmBuilderState } from './hooks/useWasmBuilderState';
-import { useWasmBuilderActions } from './hooks/useWasmBuilderActions';
-import { createKeyboardHandlers } from './utils/keyboardHandlers';
-import { createDragHandlers } from './utils/dragHandlers';
-import {
-  Element,
-  A4Paper,
-  ElementStyle,
-} from './module/wasm-interface';
-import { PaperConfig } from './types/paper';
-import Controls from './components/Controls';
-import Canvas from './components/Canvas';
-import StylePanel from './components/StylePanel';
-import TemplateManager from './components/TemplateManager';
-import PaperControls from './components/PaperControls';
-import ErrorBoundary from './components/ErrorBoundary';
+} from "./hooks";
+import { useWasmBuilderState } from "./hooks/useWasmBuilderState";
+import { useWasmBuilderActions } from "./hooks/useWasmBuilderActions";
+import { createKeyboardHandlers } from "./utils/keyboardHandlers";
+import { createDragHandlers } from "./utils/dragHandlers";
+import { Element, A4Paper, ElementStyle } from "./module/wasm-interface";
+import { PaperConfig } from "./types/paper";
+import Controls from "./components/Controls";
+import Canvas from "./components/Canvas";
+import StylePanel from "./components/StylePanel";
+import TemplateManager from "./components/TemplateManager";
+import PaperControls from "./components/PaperControls";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Helper function to convert A4Paper to PaperConfig
 const convertA4PaperToPaperConfig = (a4Paper: A4Paper): PaperConfig => ({
   id: a4Paper.id,
   size: a4Paper.size,
-  orientation: a4Paper.orientation.toLowerCase() as 'portrait' | 'landscape',
+  orientation: a4Paper.orientation.toLowerCase() as "portrait" | "landscape",
   x: a4Paper.x,
   y: a4Paper.y,
   width: a4Paper.width,
@@ -47,20 +43,21 @@ interface WasmHtmlBuilderProps {
   enableDetailedPerformance?: boolean;
 }
 
-const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({ 
-  enableDetailedPerformance: initialEnableDetailedPerformance = false 
+const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
+  enableDetailedPerformance: initialEnableDetailedPerformance = false,
 }) => {
   // Initialize WASM engine
   const wasmEngine = useWasmEngine({
     enablePerformanceMonitoring: true,
     autoInitialize: true,
-    onError: error => console.error('WASM Error:', error),
-    onInitialized: () => console.log('WASM Engine initialized!'),
+    onError: (error) => console.error("WASM Error:", error),
+    onInitialized: () => console.log("WASM Engine initialized!"),
   });
 
   // Initialize state management
   const state = useWasmBuilderState();
-  const [enableDetailedPerformance, setEnableDetailedPerformance] = React.useState(initialEnableDetailedPerformance);
+  const [enableDetailedPerformance, setEnableDetailedPerformance] =
+    React.useState(initialEnableDetailedPerformance);
 
   // Performance monitoring toggle handler
   const handleToggleDetailedPerformance = useCallback((enabled: boolean) => {
@@ -68,16 +65,17 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
   }, []);
 
   // Memoize expensive computations
-  const paperConfigs = useMemo(() => 
-    state.papers.map(convertA4PaperToPaperConfig), 
-    [state.papers]
+  const paperConfigs = useMemo(
+    () => state.papers.map(convertA4PaperToPaperConfig),
+    [state.papers],
   );
 
-  const selectedElement = useMemo(() => 
-    state.selectedElementId 
-      ? state.getElementById(state.selectedElementId) || null
-      : null,
-    [state.selectedElementId, state.getElementById]
+  const selectedElement = useMemo(
+    () =>
+      state.selectedElementId
+        ? state.getElementById(state.selectedElementId) || null
+        : null,
+    [state.selectedElementId, state.getElementById],
   );
 
   // Initialize feature hooks
@@ -97,24 +95,24 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
 
   // Spatial indexing stats monitoring
   const [spatialStats, setSpatialStats] = React.useState<any>(null);
-  
+
   React.useEffect(() => {
     if (!enableDetailedPerformance || !wasmEngine.state.isLoaded) return;
-    
+
     const interval = setInterval(() => {
       try {
         const stats = wasmEngine.getSpatialIndexStats();
         if (stats) {
-          console.log('Spatial Index Stats:', stats);
+          console.log("Spatial Index Stats:", stats);
           setSpatialStats(stats);
         } else {
-          console.log('No spatial index stats available');
+          console.log("No spatial index stats available");
         }
       } catch (error) {
-        console.error('Error getting spatial index stats:', error);
+        console.error("Error getting spatial index stats:", error);
       }
     }, 2000);
-    
+
     return () => clearInterval(interval);
   }, [enableDetailedPerformance, wasmEngine.state.isLoaded, wasmEngine]);
 
@@ -125,9 +123,9 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
         const zoom = wasmEngine.getZoom();
         setCurrentZoom(zoom);
       };
-      
+
       updateZoom();
-      
+
       // Update zoom periodically to reflect changes
       const interval = setInterval(updateZoom, 100);
       return () => clearInterval(interval);
@@ -158,8 +156,8 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
       if (wasmEngine.state.isLoaded) {
         const allElements = wasmEngine.getAllElements();
         if (state.styleTemplate) {
-          state.setElements(prevElements => {
-            return allElements.map(wasmElement => {
+          state.setElements((prevElements) => {
+            return allElements.map((wasmElement) => {
               const existingElement = state.getElementById(wasmElement.id);
               if (!existingElement) {
                 return {
@@ -242,17 +240,17 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
       onDeleteElement: actions.deleteElement,
     });
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [
-    state.selectedElementId, 
-    state.elements, 
-    copyPaste, 
-    undoRedo, 
-    elementHandlers.handlePasteElement, 
-    undoRedoHandlers.handleUndo, 
-    undoRedoHandlers.handleRedo, 
-    actions.deleteElement
+    state.selectedElementId,
+    state.elements,
+    copyPaste,
+    undoRedo,
+    elementHandlers.handlePasteElement,
+    undoRedoHandlers.handleUndo,
+    undoRedoHandlers.handleRedo,
+    actions.deleteElement,
   ]);
 
   // Memoize loading and error states
@@ -266,7 +264,9 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600 text-sm">กำลังโหลด WASM Engine...</p>
+            <p className="mt-4 text-gray-600 text-sm">
+              กำลังโหลด WASM Engine...
+            </p>
           </div>
         </div>
       )}
@@ -284,19 +284,18 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
       {/* Main Content */}
       {!isLoading && !hasError && (
         <div className="w-full h-screen bg-gray-100 dark:bg-neutral-900 overflow-hidden flex flex-col pb-4">
+          {/* Paper Controls */}
+          <PaperControls
+            papers={paperConfigs}
+            selectedPaperId={paperHandlers.selectedPaperId}
+            onAddPaper={paperHandlers.handleAddPaper}
+            onSelectPaper={paperHandlers.handleSelectPaper}
+            onRemovePaper={paperHandlers.handleRemovePaper}
+            onClearAllPapers={paperHandlers.handleClearAllPapers}
+          />
 
-        {/* Paper Controls */}
-        <PaperControls
-          papers={paperConfigs}
-          selectedPaperId={paperHandlers.selectedPaperId}
-          onAddPaper={paperHandlers.handleAddPaper}
-          onSelectPaper={paperHandlers.handleSelectPaper}
-          onRemovePaper={paperHandlers.handleRemovePaper}
-          onClearAllPapers={paperHandlers.handleClearAllPapers}
-        />
-
-        {/* Controls */}
-        <Controls
+          {/* Controls */}
+          <Controls
             enableDetailedPerformance={enableDetailedPerformance}
             onToggleDetailedPerformance={handleToggleDetailedPerformance}
             isProcessing={state.isProcessing}
@@ -331,7 +330,13 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
               paperHandlers.setSelectedPaperId(null);
               setTimeout(() => {
                 const { x: centerX, y: centerY } = centerPosition;
-                const paper1 = wasmEngine.createPaper("paper-1", "A4", "Portrait", centerX, centerY);
+                const paper1 = wasmEngine.createPaper(
+                  "paper-1",
+                  "A4",
+                  "Portrait",
+                  centerX,
+                  centerY,
+                );
                 if (paper1) {
                   state.setPapers([paper1]);
                 }
@@ -371,131 +376,58 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
             isWasmLoaded={wasmEngine.state.isLoaded}
           />
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Canvas */}
-          <div className="flex-1 overflow-hidden">
-            <Canvas
-            papers={state.papers}
-            paperConfigs={paperConfigs}
-            selectedPaperId={paperHandlers.selectedPaperId}
-            elements={state.elements}
-            selectedElementId={state.selectedElementId}
-            editingElementId={state.editingElementId}
-            isDragging={state.isDragging}
-            dragElementId={state.dragElementId}
-            lockedElements={state.lockedElements}
-            showElementBorders={state.showElementBorders}
-            spatialStats={spatialStats}
-            showRuler={state.showRuler}
-            rulerUnit={state.rulerUnit}
-            showGrid={state.showGrid}
-            snapToGrid={state.snapToGrid}
-            gridSize={state.gridSize}
-            onMouseUp={elementHandlers.handleMouseUp}
-            onCanvasClick={elementHandlers.handleCanvasClick}
-            onPositionChange={actions.handlePositionChange}
-            onSizeChange={actions.handleSizeChange}
-            onContentChange={actions.handleContentChange}
-            onStyleChange={actions.handleStyleChange}
-            onElementSelect={elementHandlers.handleElementSelect}
-            onStartEdit={elementHandlers.handleStartEdit}
-            onEndEdit={elementHandlers.handleEndEdit}
-            onDeleteElement={actions.deleteElement}
-            onStartDrag={dragHandlers.handleMouseDown}
-            onToggleLock={elementHandlers.handleToggleLock}
-            onCopyElement={elementHandlers.handleCopyElementFromId}
-            onPaperSelect={paperHandlers.handleSelectPaper}
-            // Zoom handlers
-            onZoom={(zoom) => {
-              if (wasmEngine.state.isLoaded) {
-                wasmEngine.setZoom(zoom);
-              }
-            }}
-            onZoomToPoint={(screenX, screenY, zoomDelta) => {
-              if (wasmEngine.state.isLoaded) {
-                const newZoom = wasmEngine.zoomToPoint(screenX, screenY, zoomDelta);
-                setCurrentZoom(newZoom);
-              }
-            }}
-            currentZoom={currentZoom}
-            // Table-specific handlers
-            onTableCellChange={tableHandlers.handleTableCellChange}
-            onAddRow={tableHandlers.handleAddRow}
-            onRemoveRow={tableHandlers.handleRemoveRow}
-            onAddColumn={tableHandlers.handleAddColumn}
-            onRemoveColumn={tableHandlers.handleRemoveColumn}
-            onMergeCells={tableHandlers.handleMergeCells}
-            onUpdateColumnWidth={tableHandlers.handleUpdateColumnWidth}
-            onUpdateRowHeight={tableHandlers.handleUpdateRowHeight}
-            // Cell selection props moved to Zustand store
-            // Spatial indexing methods
-            onSpatialQuery={(x, y, width, height) => {
-              if (wasmEngine.state.isLoaded) {
-                try {
-                  console.log('Spatial Query:', { x, y, width, height });
-                  const result = wasmEngine.queryElementsInRegion(x, y, width, height);
-                  console.log('Spatial Query Result:', result);
-                  if (result) {
-                    return result;
-                  }
-                } catch (error) {
-                  console.error('Error querying elements in region:', error);
-                }
-              }
-              return [];
-            }}
-            onSpatialFindAtPoint={(x, y) => {
-              if (wasmEngine.state.isLoaded) {
-                try {
-                  const result = wasmEngine.findElementsAtPoint(x, y);
-                  if (result) {
-                    return result;
-                  }
-                } catch (error) {
-                  console.error('Error finding elements at point:', error);
-                }
-              }
-              return [];
-            }}
-            onSpatialFindNearest={(x, y, maxDistance) => {
-              if (wasmEngine.state.isLoaded) {
-                try {
-                  const result = wasmEngine.findNearestElement(x, y, maxDistance || 100);
-                  if (result) {
-                    return result;
-                  }
-                } catch (error) {
-                  console.error('Error finding nearest element:', error);
-                }
-              }
-              return null;
-            }}
-            onSpatialDetectCollisions={(elementId) => {
-              if (wasmEngine.state.isLoaded) {
-                try {
-                  const result = wasmEngine.detectElementCollisions(elementId);
-                  if (result) {
-                    return result;
-                  }
-                } catch (error) {
-                  console.error('Error detecting element collisions:', error);
-                }
-              }
-              return [];
-            }}
-            />
-          </div>
-
-          {/* Style Panel - Desktop Sidebar */}
-          {state.showStylePanel && state.selectedElementId && (
-            <div className="hidden md:flex w-72 border-l border-border bg-background flex-shrink-0">
-              <StylePanel
-                element={selectedElement}
-                onStyleChange={actions.handleStyleChange}
+          {/* Main Content Area */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Canvas */}
+            <div className="flex-1 overflow-hidden">
+              <Canvas
+                papers={state.papers}
+                paperConfigs={paperConfigs}
+                selectedPaperId={paperHandlers.selectedPaperId}
+                elements={state.elements}
+                selectedElementId={state.selectedElementId}
+                editingElementId={state.editingElementId}
+                isDragging={state.isDragging}
+                dragElementId={state.dragElementId}
+                lockedElements={state.lockedElements}
+                showElementBorders={state.showElementBorders}
+                spatialStats={spatialStats}
+                showRuler={state.showRuler}
+                rulerUnit={state.rulerUnit}
+                showGrid={state.showGrid}
+                snapToGrid={state.snapToGrid}
+                gridSize={state.gridSize}
+                onMouseUp={elementHandlers.handleMouseUp}
+                onCanvasClick={elementHandlers.handleCanvasClick}
+                onPositionChange={actions.handlePositionChange}
+                onSizeChange={actions.handleSizeChange}
                 onContentChange={actions.handleContentChange}
-                onClose={() => state.setShowStylePanel(false)}
-                styleTemplate={state.styleTemplate}
+                onStyleChange={actions.handleStyleChange}
+                onElementSelect={elementHandlers.handleElementSelect}
+                onStartEdit={elementHandlers.handleStartEdit}
+                onEndEdit={elementHandlers.handleEndEdit}
+                onDeleteElement={actions.deleteElement}
+                onStartDrag={dragHandlers.handleMouseDown}
+                onToggleLock={elementHandlers.handleToggleLock}
+                onCopyElement={elementHandlers.handleCopyElementFromId}
+                onPaperSelect={paperHandlers.handleSelectPaper}
+                // Zoom handlers
+                onZoom={(zoom) => {
+                  if (wasmEngine.state.isLoaded) {
+                    wasmEngine.setZoom(zoom);
+                  }
+                }}
+                onZoomToPoint={(screenX, screenY, zoomDelta) => {
+                  if (wasmEngine.state.isLoaded) {
+                    const newZoom = wasmEngine.zoomToPoint(
+                      screenX,
+                      screenY,
+                      zoomDelta,
+                    );
+                    setCurrentZoom(newZoom);
+                  }
+                }}
+                currentZoom={currentZoom}
                 // Table-specific handlers
                 onTableCellChange={tableHandlers.handleTableCellChange}
                 onAddRow={tableHandlers.handleAddRow}
@@ -506,55 +438,154 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
                 onUpdateColumnWidth={tableHandlers.handleUpdateColumnWidth}
                 onUpdateRowHeight={tableHandlers.handleUpdateRowHeight}
                 // Cell selection props moved to Zustand store
+                // Spatial indexing methods
+                onSpatialQuery={(x, y, width, height) => {
+                  if (wasmEngine.state.isLoaded) {
+                    try {
+                      console.log("Spatial Query:", { x, y, width, height });
+                      const result = wasmEngine.queryElementsInRegion(
+                        x,
+                        y,
+                        width,
+                        height,
+                      );
+                      console.log("Spatial Query Result:", result);
+                      if (result) {
+                        return result;
+                      }
+                    } catch (error) {
+                      console.error(
+                        "Error querying elements in region:",
+                        error,
+                      );
+                    }
+                  }
+                  return [];
+                }}
+                onSpatialFindAtPoint={(x, y) => {
+                  if (wasmEngine.state.isLoaded) {
+                    try {
+                      const result = wasmEngine.findElementsAtPoint(x, y);
+                      if (result) {
+                        return result;
+                      }
+                    } catch (error) {
+                      console.error("Error finding elements at point:", error);
+                    }
+                  }
+                  return [];
+                }}
+                onSpatialFindNearest={(x, y, maxDistance) => {
+                  if (wasmEngine.state.isLoaded) {
+                    try {
+                      const result = wasmEngine.findNearestElement(
+                        x,
+                        y,
+                        maxDistance || 100,
+                      );
+                      if (result) {
+                        return result;
+                      }
+                    } catch (error) {
+                      console.error("Error finding nearest element:", error);
+                    }
+                  }
+                  return null;
+                }}
+                onSpatialDetectCollisions={(elementId) => {
+                  if (wasmEngine.state.isLoaded) {
+                    try {
+                      const result =
+                        wasmEngine.detectElementCollisions(elementId);
+                      if (result) {
+                        return result;
+                      }
+                    } catch (error) {
+                      console.error(
+                        "Error detecting element collisions:",
+                        error,
+                      );
+                    }
+                  }
+                  return [];
+                }}
               />
+            </div>
+
+            {/* Style Panel - Desktop Sidebar */}
+            {state.showStylePanel && state.selectedElementId && (
+              <div className="hidden md:flex w-72 border-l border-border bg-background flex-shrink-0">
+                <StylePanel
+                  element={selectedElement}
+                  onStyleChange={actions.handleStyleChange}
+                  onContentChange={actions.handleContentChange}
+                  onClose={() => state.setShowStylePanel(false)}
+                  styleTemplate={state.styleTemplate}
+                  // Table-specific handlers
+                  onTableCellChange={tableHandlers.handleTableCellChange}
+                  onAddRow={tableHandlers.handleAddRow}
+                  onRemoveRow={tableHandlers.handleRemoveRow}
+                  onAddColumn={tableHandlers.handleAddColumn}
+                  onRemoveColumn={tableHandlers.handleRemoveColumn}
+                  onMergeCells={tableHandlers.handleMergeCells}
+                  onUpdateColumnWidth={tableHandlers.handleUpdateColumnWidth}
+                  onUpdateRowHeight={tableHandlers.handleUpdateRowHeight}
+                  // Cell selection props moved to Zustand store
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Style Panel - Mobile Overlay */}
+          {state.showStylePanel && state.selectedElementId && (
+            <div
+              className="md:hidden fixed inset-0 z-50 bg-black/50"
+              onClick={() => state.setShowStylePanel(false)}
+            >
+              <div
+                className="fixed right-0 top-0 h-full w-80 bg-background border-l border-border shadow-lg"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <StylePanel
+                  element={selectedElement}
+                  onStyleChange={actions.handleStyleChange}
+                  onContentChange={actions.handleContentChange}
+                  onClose={() => state.setShowStylePanel(false)}
+                  styleTemplate={state.styleTemplate}
+                  // Table-specific handlers
+                  onTableCellChange={tableHandlers.handleTableCellChange}
+                  onAddRow={tableHandlers.handleAddRow}
+                  onRemoveRow={tableHandlers.handleRemoveRow}
+                  onAddColumn={tableHandlers.handleAddColumn}
+                  onRemoveColumn={tableHandlers.handleRemoveColumn}
+                  onMergeCells={tableHandlers.handleMergeCells}
+                  onUpdateColumnWidth={tableHandlers.handleUpdateColumnWidth}
+                  onUpdateRowHeight={tableHandlers.handleUpdateRowHeight}
+                  // Cell selection props moved to Zustand store
+                />
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Style Panel - Mobile Overlay */}
-        {state.showStylePanel && state.selectedElementId && (
-          <div className="md:hidden fixed inset-0 z-50 bg-black/50" onClick={() => state.setShowStylePanel(false)}>
-            <div className="fixed right-0 top-0 h-full w-80 bg-background border-l border-border shadow-lg" onClick={(e) => e.stopPropagation()}>
-              <StylePanel
-                element={selectedElement}
-                onStyleChange={actions.handleStyleChange}
-                onContentChange={actions.handleContentChange}
-                onClose={() => state.setShowStylePanel(false)}
-                styleTemplate={state.styleTemplate}
-                // Table-specific handlers
-                onTableCellChange={tableHandlers.handleTableCellChange}
-                onAddRow={tableHandlers.handleAddRow}
-                onRemoveRow={tableHandlers.handleRemoveRow}
-                onAddColumn={tableHandlers.handleAddColumn}
-                onRemoveColumn={tableHandlers.handleRemoveColumn}
-                onMergeCells={tableHandlers.handleMergeCells}
-                onUpdateColumnWidth={tableHandlers.handleUpdateColumnWidth}
-                onUpdateRowHeight={tableHandlers.handleUpdateRowHeight}
-                // Cell selection props moved to Zustand store
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Template Manager */}
-        {state.showTemplateManager && (
-          <TemplateManager
-            templates={templateManager.templates}
-            currentTemplate={templateManager.currentTemplate}
-            onSaveTemplate={templateHandlers.handleSaveTemplate}
-            onLoadTemplate={templateHandlers.handleLoadTemplate}
-            onDeleteTemplate={templateManager.deleteTemplate}
-            onClearTemplate={templateHandlers.handleClearTemplate}
-            onExportTemplates={templateManager.exportTemplates}
-            onImportTemplates={templateManager.importTemplates}
-            currentStyle={
-              state.selectedElementId
-                ? state.getElementById(state.selectedElementId)?.style
-                : undefined
-            }
-            onClose={() => state.setShowTemplateManager(false)}
-          />
-        )}
+          {/* Template Manager */}
+          {state.showTemplateManager && (
+            <TemplateManager
+              templates={templateManager.templates}
+              currentTemplate={templateManager.currentTemplate}
+              onSaveTemplate={templateHandlers.handleSaveTemplate}
+              onLoadTemplate={templateHandlers.handleLoadTemplate}
+              onDeleteTemplate={templateManager.deleteTemplate}
+              onClearTemplate={templateHandlers.handleClearTemplate}
+              onExportTemplates={templateManager.exportTemplates}
+              onImportTemplates={templateManager.importTemplates}
+              currentStyle={
+                state.selectedElementId
+                  ? state.getElementById(state.selectedElementId)?.style
+                  : undefined
+              }
+              onClose={() => state.setShowTemplateManager(false)}
+            />
+          )}
         </div>
       )}
     </ErrorBoundary>

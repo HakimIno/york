@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useEffect } from "react";
 
 export interface RulerProps {
   width: number;
@@ -6,12 +6,19 @@ export interface RulerProps {
   scrollLeft: number;
   scrollTop: number;
   zoom: number;
-  unit: 'px' | 'mm' | 'cm' | 'in';
+  unit: "px" | "mm" | "cm" | "in";
   showRuler: boolean;
-  orientation: 'horizontal' | 'vertical';
+  orientation: "horizontal" | "vertical";
   className?: string;
-  onGuidelineCreate?: (position: number, orientation: 'horizontal' | 'vertical') => void;
-  onDragStateChange?: (isDragging: boolean, position: number | null, orientation: 'horizontal' | 'vertical') => void;
+  onGuidelineCreate?: (
+    position: number,
+    orientation: "horizontal" | "vertical",
+  ) => void;
+  onDragStateChange?: (
+    isDragging: boolean,
+    position: number | null,
+    orientation: "horizontal" | "vertical",
+  ) => void;
 }
 
 interface RulerMark {
@@ -30,12 +37,12 @@ const Ruler: React.FC<RulerProps> = ({
   unit,
   showRuler,
   orientation,
-  className = '',
+  className = "",
   onGuidelineCreate,
   onDragStateChange,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const theme = 'dark' ;
+  const theme = "dark";
   const [isDragging, setIsDragging] = React.useState(false);
   const [dragPosition, setDragPosition] = React.useState<number | null>(null);
 
@@ -44,15 +51,15 @@ const Ruler: React.FC<RulerProps> = ({
     const dpi = 96; // Standard web DPI
     const mmPerInch = 25.4;
     const cmPerInch = 2.54;
-    
+
     switch (unit) {
-      case 'mm':
+      case "mm":
         return (px: number) => (px / dpi) * mmPerInch;
-      case 'cm':
+      case "cm":
         return (px: number) => (px / dpi) * cmPerInch;
-      case 'in':
+      case "in":
         return (px: number) => px / dpi;
-      case 'px':
+      case "px":
       default:
         return (px: number) => px;
     }
@@ -63,15 +70,15 @@ const Ruler: React.FC<RulerProps> = ({
     const dpi = 96;
     const mmPerInch = 25.4;
     const cmPerInch = 2.54;
-    
+
     switch (unit) {
-      case 'mm':
+      case "mm":
         return (value: number) => (value / mmPerInch) * dpi;
-      case 'cm':
+      case "cm":
         return (value: number) => (value / cmPerInch) * dpi;
-      case 'in':
+      case "in":
         return (value: number) => value * dpi;
-      case 'px':
+      case "px":
       default:
         return (value: number) => value;
     }
@@ -80,14 +87,14 @@ const Ruler: React.FC<RulerProps> = ({
   // Generate ruler marks based on zoom level and unit
   const generateMarks = useMemo((): RulerMark[] => {
     const marks: RulerMark[] = [];
-    const size = orientation === 'horizontal' ? width : height;
-    const scrollOffset = orientation === 'horizontal' ? scrollLeft : scrollTop;
-    
+    const size = orientation === "horizontal" ? width : height;
+    const scrollOffset = orientation === "horizontal" ? scrollLeft : scrollTop;
+
     // Calculate appropriate intervals based on zoom and unit
     let majorInterval: number;
     let minorInterval: number;
-    
-    if (unit === 'px') {
+
+    if (unit === "px") {
       // For pixels, use zoom-based intervals
       if (zoom >= 2) {
         majorInterval = 50;
@@ -105,16 +112,16 @@ const Ruler: React.FC<RulerProps> = ({
     } else {
       // For physical units, use unit-appropriate intervals
       switch (unit) {
-        case 'mm':
+        case "mm":
           majorInterval = convertFromUnit(10); // 10mm marks
-          minorInterval = convertFromUnit(2);  // 2mm marks
+          minorInterval = convertFromUnit(2); // 2mm marks
           break;
-        case 'cm':
-          majorInterval = convertFromUnit(1);  // 1cm marks
+        case "cm":
+          majorInterval = convertFromUnit(1); // 1cm marks
           minorInterval = convertFromUnit(0.2); // 2mm marks
           break;
-        case 'in':
-          majorInterval = convertFromUnit(1);  // 1 inch marks
+        case "in":
+          majorInterval = convertFromUnit(1); // 1 inch marks
           minorInterval = convertFromUnit(0.25); // 1/4 inch marks
           break;
         default:
@@ -126,125 +133,110 @@ const Ruler: React.FC<RulerProps> = ({
     // Generate marks
     const start = Math.floor(scrollOffset / minorInterval) * minorInterval;
     const end = start + size + majorInterval;
-    
+
     for (let pos = start; pos <= end; pos += minorInterval) {
       const isMajor = pos % majorInterval === 0;
       const value = convertToUnit(pos);
-      
+
       marks.push({
         position: pos - scrollOffset,
         value,
         isMajor,
-        label: isMajor ? value.toFixed(unit === 'px' ? 0 : 1) : undefined,
+        label: isMajor ? value.toFixed(unit === "px" ? 0 : 1) : undefined,
       });
     }
-    
+
     return marks;
-  }, [width, height, scrollLeft, scrollTop, zoom, unit, orientation, convertToUnit, convertFromUnit]);
+  }, [
+    width,
+    height,
+    scrollLeft,
+    scrollTop,
+    zoom,
+    unit,
+    orientation,
+    convertToUnit,
+    convertFromUnit,
+  ]);
 
   // Draw ruler
   useEffect(() => {
     if (!showRuler || !canvasRef.current) return;
-    
+
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Get device pixel ratio for crisp rendering
-    const dpr = window.devicePixelRatio || 1;
-    
-    // Set canvas size with device pixel ratio for crisp rendering
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    
-    // Scale context to match device pixel ratio
-    ctx.scale(dpr, dpr);
+    // Set canvas size
+    canvas.width = width;
+    canvas.height = height;
 
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
     // Set styles - Modern minimal design with theme support
-    const isDark = theme !== 'dark';
-    
-    // Modern gradient background
-    const gradient = ctx.createLinearGradient(0, 0, orientation === 'horizontal' ? width : 0, orientation === 'horizontal' ? 0 : height);
-    if (isDark) {
-      gradient.addColorStop(0, 'rgba(20, 20, 20, 0.98)');
-      gradient.addColorStop(1, 'rgba(30, 30, 30, 0.95)');
-    } else {
-      gradient.addColorStop(0, 'rgba(248, 250, 252, 0.98)');
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 0.95)');
-    }
-    
-    ctx.fillStyle = gradient;
+    const isDark = theme !== "dark";
+    ctx.fillStyle = isDark
+      ? "rgba(30, 30, 30, 0.95)"
+      : "rgba(255, 255, 255, 0.95)";
+    ctx.strokeStyle = isDark
+      ? "rgba(255, 255, 255, 0.1)"
+      : "rgba(0, 0, 0, 0.08)";
     ctx.fillRect(0, 0, width, height);
-    
-    // Subtle border with modern styling
-    ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
+    ctx.strokeRect(0, 0, width, height);
 
     // Draw marks
     const marks = generateMarks;
-    
-    marks.forEach(mark => {
+
+    marks.forEach((mark) => {
       const { position, value, isMajor, label } = mark;
-      
-      if (position < 0 || position > (orientation === 'horizontal' ? width : height)) {
+
+      if (
+        position < 0 ||
+        position > (orientation === "horizontal" ? width : height)
+      ) {
         return;
       }
 
-      // Modern crisp stroke styles
-      ctx.strokeStyle = isMajor 
-        ? (isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)')
-        : (isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)');
-      ctx.lineWidth = isMajor ? 1.5 : 1.0;
-      ctx.lineCap = 'round';
-      
-      if (orientation === 'horizontal') {
+      ctx.strokeStyle = isMajor
+        ? isDark
+          ? "rgba(255, 255, 255, 0.8)"
+          : "rgba(0, 0, 0, 0.7)"
+        : isDark
+          ? "rgba(255, 255, 255, 0.5)"
+          : "rgba(0, 0, 0, 0.4)";
+      ctx.lineWidth = isMajor ? 2.0 : 1.5;
+
+      if (orientation === "horizontal") {
         const markHeight = isMajor ? 10 : 6;
         ctx.beginPath();
         ctx.moveTo(position, height - markHeight);
         ctx.lineTo(position, height);
         ctx.stroke();
-        
-        // Draw label with modern styling and shadow
+
+        // Draw label with background for better readability
         if (label && isMajor) {
-          // Set font first for measurement
-          ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
           const textWidth = ctx.measureText(label).width;
-          const padding = 4;
+          const padding = 2;
           const bgWidth = textWidth + padding * 2;
-          const bgHeight = 12;
+          const bgHeight = 10;
           const bgX = position - bgWidth / 2;
-          const bgY = height - 22;
-          
-          // Draw modern background with subtle shadow
-          ctx.shadowColor = isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)';
-          ctx.shadowBlur = 2;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 1;
-          
-          // Rounded rectangle background
-          const radius = 3;
-          ctx.fillStyle = isDark ? 'rgba(25, 25, 25, 0.95)' : 'rgba(255, 255, 255, 0.95)';
-          ctx.beginPath();
-          ctx.roundRect(bgX, bgY, bgWidth, bgHeight, radius);
-          ctx.fill();
-          
-          // Reset shadow
-          ctx.shadowColor = 'transparent';
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 0;
-          
-          // Draw text with crisp rendering
-          ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.85)';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(label, position, height - 16);
+          const bgY = height - 20;
+
+          // Draw background
+          ctx.fillStyle = isDark
+            ? "rgba(30, 30, 30, 0.9)"
+            : "rgba(255, 255, 255, 0.9)";
+          ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
+
+          // Draw text
+          ctx.fillStyle = isDark
+            ? "rgba(255, 255, 255, 0.9)"
+            : "rgba(0, 0, 0, 0.8)";
+          ctx.font =
+            '9px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.textAlign = "center";
+          ctx.fillText(label, position, height - 13);
         }
       } else {
         const markWidth = isMajor ? 10 : 6;
@@ -252,93 +244,51 @@ const Ruler: React.FC<RulerProps> = ({
         ctx.moveTo(width - markWidth, position);
         ctx.lineTo(width, position);
         ctx.stroke();
-        
-        // Draw label with modern styling and shadow
+
+        // Draw label with background for better readability
         if (label && isMajor) {
           // Set font first to measure text
-          ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+          ctx.font =
+            '9px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
           const textWidth = ctx.measureText(label).width;
-          const padding = 4;
+          const padding = 2;
           const bgWidth = textWidth + padding * 2;
-          const bgHeight = 12;
-          const bgX = width - 14 - textWidth;
+          const bgHeight = 10;
+          const bgX = width - 12 - textWidth;
           const bgY = position - bgHeight / 2;
-          
-          // Draw modern background with subtle shadow
-          ctx.shadowColor = isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)';
-          ctx.shadowBlur = 2;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 1;
-          
-          // Rounded rectangle background
-          const radius = 3;
-          ctx.fillStyle = isDark ? 'rgba(25, 25, 25, 0.95)' : 'rgba(255, 255, 255, 0.95)';
-          ctx.beginPath();
-          ctx.roundRect(bgX, bgY, bgWidth, bgHeight, radius);
-          ctx.fill();
-          
-          // Reset shadow
-          ctx.shadowColor = 'transparent';
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 0;
-          
-          // Draw text with crisp rendering
-          ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.85)';
-          ctx.textAlign = 'right';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(label, width - 12, position);
+
+          // Draw background
+          ctx.fillStyle = isDark
+            ? "rgba(30, 30, 30, 0.9)"
+            : "rgba(255, 255, 255, 0.9)";
+          ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
+
+          // Draw text
+          ctx.fillStyle = isDark
+            ? "rgba(255, 255, 255, 0.9)"
+            : "rgba(0, 0, 0, 0.8)";
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+          ctx.fillText(label, width - 10, position);
         }
       }
     });
 
-    // Draw modern unit indicator with background
-    ctx.font = '8px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-    const unitText = unit.toUpperCase();
-    const unitWidth = ctx.measureText(unitText).width;
-    const unitPadding = 3;
-    const unitBgWidth = unitWidth + unitPadding * 2;
-    const unitBgHeight = 10;
-    
-    // Draw unit background with subtle shadow
-    ctx.shadowColor = isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.08)';
-    ctx.shadowBlur = 1;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 1;
-    
-    const unitRadius = 2;
-    ctx.fillStyle = isDark ? 'rgba(40, 40, 40, 0.9)' : 'rgba(240, 242, 245, 0.9)';
-    ctx.beginPath();
-    ctx.roundRect(4, 4, unitBgWidth, unitBgHeight, unitRadius);
-    ctx.fill();
-    
-    // Reset shadow
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
-    
-    // Draw unit text
-    ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(unitText, 6, 9);
+    // Draw unit indicator
+    ctx.fillStyle = isDark ? "rgba(255, 255, 255, 0.6)" : "rgba(0, 0, 0, 0.5)";
+    ctx.font =
+      '7px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(unit, 6, 6);
 
-    // Draw modern guideline preview while dragging
+    // Draw guideline preview while dragging
     if (isDragging && dragPosition !== null) {
-      // Modern blue color with glow effect
-      ctx.strokeStyle = '#007AFF';
+      ctx.strokeStyle = "#007AFF";
       ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
-      ctx.setLineDash([6, 4]);
-      
-      // Add glow effect
-      ctx.shadowColor = '#007AFF';
-      ctx.shadowBlur = 4;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-      
-      if (orientation === 'horizontal') {
+      ctx.setLineDash([8, 4]);
+
+      if (orientation === "horizontal") {
         const x = dragPosition - scrollLeft;
         if (x >= 0 && x <= width) {
           ctx.beginPath();
@@ -355,28 +305,35 @@ const Ruler: React.FC<RulerProps> = ({
           ctx.stroke();
         }
       }
-      
-      // Reset effects
-      ctx.setLineDash([]);
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
+
+      ctx.setLineDash([]); // Reset line dash
     }
-  }, [width, height, generateMarks, showRuler, orientation, unit, theme, isDragging, dragPosition, scrollLeft, scrollTop]);
+  }, [
+    width,
+    height,
+    generateMarks,
+    showRuler,
+    orientation,
+    unit,
+    theme,
+    isDragging,
+    dragPosition,
+    scrollLeft,
+    scrollTop,
+  ]);
 
   // Handle mouse events for guideline creation
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!onGuidelineCreate) return;
-    
+
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
     const clientX = e.clientX - rect.left;
     const clientY = e.clientY - rect.top;
-    
+
     let position: number;
-    if (orientation === 'horizontal') {
+    if (orientation === "horizontal") {
       position = clientX + scrollLeft;
     } else {
       position = clientY + scrollTop;
@@ -384,10 +341,10 @@ const Ruler: React.FC<RulerProps> = ({
 
     setIsDragging(true);
     setDragPosition(position);
-    
+
     // Notify parent component about drag state
     onDragStateChange?.(true, position, orientation);
-    
+
     // Prevent default to avoid text selection
     e.preventDefault();
   };
@@ -400,16 +357,16 @@ const Ruler: React.FC<RulerProps> = ({
 
     const clientX = e.clientX - rect.left;
     const clientY = e.clientY - rect.top;
-    
+
     let position: number;
-    if (orientation === 'horizontal') {
+    if (orientation === "horizontal") {
       position = clientX + scrollLeft;
     } else {
       position = clientY + scrollTop;
     }
 
     setDragPosition(position);
-    
+
     // Notify parent component about drag position update
     onDragStateChange?.(true, position, orientation);
   };
@@ -422,9 +379,9 @@ const Ruler: React.FC<RulerProps> = ({
     if (rect) {
       const clientX = e.clientX - rect.left;
       const clientY = e.clientY - rect.top;
-      
+
       let currentPosition: number;
-      if (orientation === 'horizontal') {
+      if (orientation === "horizontal") {
         currentPosition = clientX + scrollLeft;
       } else {
         currentPosition = clientY + scrollTop;
@@ -438,7 +395,7 @@ const Ruler: React.FC<RulerProps> = ({
 
     setIsDragging(false);
     setDragPosition(null);
-    
+
     // Notify parent component about drag end
     onDragStateChange?.(false, null, orientation);
   };
@@ -447,7 +404,7 @@ const Ruler: React.FC<RulerProps> = ({
     if (isDragging) {
       setIsDragging(false);
       setDragPosition(null);
-      
+
       // Notify parent component about drag end
       onDragStateChange?.(false, null, orientation);
     }
@@ -460,24 +417,23 @@ const Ruler: React.FC<RulerProps> = ({
       ref={canvasRef}
       className={`ruler ${orientation} ${className}`}
       style={{
-        position: 'absolute',
+        position: "absolute",
         zIndex: 10,
-        pointerEvents: onGuidelineCreate ? 'auto' : 'none',
-        cursor: onGuidelineCreate ? 'crosshair' : 'default',
-        ...(orientation === 'horizontal' 
-          ? { 
-              top: 0, 
-              left: 0, 
-              width: '100%', 
-              height: '20px'
+        pointerEvents: onGuidelineCreate ? "auto" : "none",
+        cursor: onGuidelineCreate ? "crosshair" : "default",
+        ...(orientation === "horizontal"
+          ? {
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "20px",
             }
-          : { 
-              top: 0, 
-              right: 0, 
-              width: '20px', 
-              height: '100%'
-            }
-        ),
+          : {
+              top: 0,
+              right: 0,
+              width: "20px",
+              height: "100%",
+            }),
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
