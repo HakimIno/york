@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ClientOnly } from '@/components/ClientOnly';
 
 interface ControlsProps {
   enableDetailedPerformance?: boolean;
@@ -122,59 +123,61 @@ const Controls: React.FC<ControlsProps> = React.memo(({
       <div className="flex h-10 items-center justify-between">
         {/* Left: Element Creation */}
         <div className="flex items-center space-x-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" className="h-7">
-                <Icon icon="lucide:plus" className="h-3 w-3 mr-1" />
-                Add Element
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Add Element</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onCreateElement('heading')}>
-                <Icon icon="lucide:type" className="h-4 w-4 mr-2" />
-                Heading
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateElement('paragraph')}>
-                <Icon icon="lucide:align-left" className="h-4 w-4 mr-2" />
-                Paragraph
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateElement('button')}>
-                <Icon icon="lucide:mouse-pointer-click" className="h-4 w-4 mr-2" />
-                Button
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateElement('image')}>
-                <Icon icon="lucide:image" className="h-4 w-4 mr-2" />
-                Image
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateElement('table')}>
-                <Icon icon="lucide:table" className="h-4 w-4 mr-2" />
-                Table
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateElement('form_field')}>
-                <Icon icon="lucide:edit-3" className="h-4 w-4 mr-2" />
-                Form Field
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateElement('checkbox')}>
-                <Icon icon="lucide:check-square" className="h-4 w-4 mr-2" />
-                Checkbox
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onCreateElement('rectangle')}>
-                <Icon icon="lucide:square" className="h-4 w-4 mr-2" />
-                Rectangle
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateElement('circle')}>
-                <Icon icon="lucide:circle" className="h-4 w-4 mr-2" />
-                Circle
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onCreateElement('line')}>
-                <Icon icon="lucide:minus" className="h-4 w-4 mr-2" />
-                Line
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ClientOnly>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" className="h-7">
+                  <Icon icon="lucide:plus" className="h-3 w-3 mr-1" />
+                  Add Element
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Add Element</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => onCreateElement('heading')}>
+                  <Icon icon="lucide:type" className="h-4 w-4 mr-2" />
+                  Heading
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onCreateElement('paragraph')}>
+                  <Icon icon="lucide:align-left" className="h-4 w-4 mr-2" />
+                  Paragraph
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onCreateElement('button')}>
+                  <Icon icon="lucide:mouse-pointer-click" className="h-4 w-4 mr-2" />
+                  Button
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onCreateElement('image')}>
+                  <Icon icon="lucide:image" className="h-4 w-4 mr-2" />
+                  Image
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onCreateElement('table')}>
+                  <Icon icon="lucide:table" className="h-4 w-4 mr-2" />
+                  Table
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onCreateElement('form_field')}>
+                  <Icon icon="lucide:edit-3" className="h-4 w-4 mr-2" />
+                  Form Field
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onCreateElement('checkbox')}>
+                  <Icon icon="lucide:check-square" className="h-4 w-4 mr-2" />
+                  Checkbox
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => onCreateElement('rectangle')}>
+                  <Icon icon="lucide:square" className="h-4 w-4 mr-2" />
+                  Rectangle
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onCreateElement('circle')}>
+                  <Icon icon="lucide:circle" className="h-4 w-4 mr-2" />
+                  Circle
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onCreateElement('line')}>
+                  <Icon icon="lucide:minus" className="h-4 w-4 mr-2" />
+                  Line
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </ClientOnly>
 
           <Separator orientation="vertical" className="h-4" />
 
@@ -270,33 +273,35 @@ const Controls: React.FC<ControlsProps> = React.memo(({
           </Button>
 
           {/* Unit Selector */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline" className="h-7 px-2">
-                <span className="text-xs font-mono">{rulerUnit}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuLabel>หน่วยวัด</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onSetRulerUnit('px')}>
-                <span className="font-mono mr-2">px</span>
-                Pixels
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onSetRulerUnit('mm')}>
-                <span className="font-mono mr-2">mm</span>
-                Millimeters
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onSetRulerUnit('cm')}>
-                <span className="font-mono mr-2">cm</span>
-                Centimeters
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onSetRulerUnit('in')}>
-                <span className="font-mono mr-2">in</span>
-                Inches
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ClientOnly>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline" className="h-7 px-2">
+                  <span className="text-xs font-mono">{rulerUnit}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>หน่วยวัด</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => onSetRulerUnit('px')}>
+                  <span className="font-mono mr-2">px</span>
+                  Pixels
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSetRulerUnit('mm')}>
+                  <span className="font-mono mr-2">mm</span>
+                  Millimeters
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSetRulerUnit('cm')}>
+                  <span className="font-mono mr-2">cm</span>
+                  Centimeters
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSetRulerUnit('in')}>
+                  <span className="font-mono mr-2">in</span>
+                  Inches
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </ClientOnly>
 
           {/* Zoom Controls */}
           <div className="flex items-center space-x-1 border-l border-gray-200 pl-2">
