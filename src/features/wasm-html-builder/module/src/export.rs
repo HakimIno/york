@@ -63,6 +63,13 @@ impl ExportManager {
         
         // CSS สำหรับ A4 papers
         css.push_str("
+/* Force print background colors and images */
+* {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+}
+
 .paper-container {
     width: 100%;
     min-height: 100vh;
@@ -85,6 +92,9 @@ impl ExportManager {
 .element {
     position: absolute;
     box-sizing: border-box;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
 }
 
 .element-text {
@@ -166,6 +176,11 @@ impl ExportManager {
 }
 
 @media print {
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
     body { margin: 0; }
     .paper-container { padding: 0; background: white; }
     .a4-paper { 
@@ -174,6 +189,11 @@ impl ExportManager {
         margin: 0; 
         box-shadow: none; 
         page-break-after: always;
+    }
+    .element {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
     }
     .element-table {
         table-layout: auto !important;
@@ -554,6 +574,9 @@ impl ExportManager {
     fn generate_rectangle_html(&self, element: &Element, base_style: &str) -> String {
         let fill_color = if element.style.fill.enabled {
             element.style.fill.color.clone()
+        } else if !element.style.background_color.is_empty() && element.style.background_color != "transparent" {
+            // Use background_color as fallback when fill is not enabled
+            element.style.background_color.clone()
         } else {
             "transparent".to_string()
         };
@@ -602,6 +625,9 @@ impl ExportManager {
     fn generate_circle_html(&self, element: &Element, base_style: &str) -> String {
         let fill_color = if element.style.fill.enabled {
             element.style.fill.color.clone()
+        } else if !element.style.background_color.is_empty() && element.style.background_color != "transparent" {
+            // Use background_color as fallback when fill is not enabled
+            element.style.background_color.clone()
         } else {
             "transparent".to_string()
         };
