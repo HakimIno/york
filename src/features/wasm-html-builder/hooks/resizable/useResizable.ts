@@ -84,6 +84,7 @@ interface UseResizableProps {
   elementY: number;
   onSizeChange: (elementId: string, width: number, height: number) => void;
   onPositionChange: (elementId: string, x: number, y: number) => void;
+  onResizeEnd?: () => void; // Callback when resize ends
 }
 
 export const useResizable = ({
@@ -94,6 +95,7 @@ export const useResizable = ({
   elementY,
   onSizeChange,
   onPositionChange,
+  onResizeEnd,
 }: UseResizableProps) => {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeDirection, setResizeDirection] =
@@ -198,6 +200,13 @@ export const useResizable = ({
         setResizeDirection(null);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        
+        // Call onResizeEnd callback if provided
+        if (onResizeEnd) {
+          setTimeout(() => {
+            onResizeEnd();
+          }, 50);
+        }
       };
 
       document.addEventListener('mousemove', handleMouseMove);
@@ -211,6 +220,7 @@ export const useResizable = ({
       elementY,
       onSizeChange,
       onPositionChange,
+      onResizeEnd,
       calculateResize,
     ]
   );

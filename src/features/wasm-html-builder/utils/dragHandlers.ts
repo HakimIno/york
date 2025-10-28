@@ -14,6 +14,7 @@ interface DragHandlersProps {
   pendingUpdatesRef: React.MutableRefObject<
     Map<string, { x: number; y: number; width: number; height: number }>
   >;
+  undoRedo: any; // Add undoRedo to save state after drag
 }
 
 export const createDragHandlers = ({
@@ -28,6 +29,7 @@ export const createDragHandlers = ({
   setDragElementId,
   dragThrottleRef,
   pendingUpdatesRef,
+  undoRedo,
 }: DragHandlersProps) => {
   const handleMouseDown = (e: React.MouseEvent, elementId: string) => {
     e.preventDefault();
@@ -169,15 +171,29 @@ export const createDragHandlers = ({
     };
   };
 
-  const createGlobalMouseUpHandler = (isDragging: boolean) => {
+  const createGlobalMouseUpHandler = (isDragging: boolean, dragElementId: string | null) => {
     return () => {
-      if (isDragging) {
+      if (isDragging && dragElementId) {
         try {
           wasmEngine.endDrag();
           setIsDragging(false);
           setDragElementId(null);
+          
           // Clear any pending updates
           pendingUpdatesRef.current.clear();
+          
+          // Save state after drag completes for undo/redo
+          // Use setTimeout to ensure React state has updated before saving
+          setTimeout(() => {
+            console.log('[Drag] Saving state after drag completed');
+            // Get latest elements from WASM to ensure position is up-to-date
+            const currentElements = wasmEngine.getAllElements();
+            undoRedo.saveState(
+              currentElements,
+              'drag_element',
+              `Moved element ${dragElementId}`
+            );
+          }, 50);
         } catch (error) {
           console.error('Error ending drag:', error);
           setError('Error ending drag operation');

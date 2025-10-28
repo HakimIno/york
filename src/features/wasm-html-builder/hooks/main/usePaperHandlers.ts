@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { useWasmBuilderState } from '../useWasmBuilderState';
 import { calculateCenterPosition } from '../../utils/paperPosition';
 
@@ -13,12 +13,23 @@ export const usePaperHandlers = ({
 }: UsePaperHandlersProps) => {
   const [selectedPaperId, setSelectedPaperId] = useState<string | null>(null);
   const centerPosition = calculateCenterPosition();
+  const papersRef = useRef(state.papers);
+  
+  // Keep ref in sync
+  useEffect(() => {
+    papersRef.current = state.papers;
+  }, [state.papers]);
 
   const handleAddPaper = useCallback(
     (size: 'A4' | 'A5', orientation: 'portrait' | 'landscape') => {
+      if (!wasmEngine.state?.isLoaded) {
+        console.warn('WASM not loaded yet');
+        return;
+      }
+      
       try {
         const paperId = `${size.toLowerCase()}-paper-${Date.now()}`;
-        const currentPapers = state.papers;
+        const currentPapers = papersRef.current;
         const paperSpacing = 50;
         const { x: centerX, y: centerY } = centerPosition;
         
@@ -28,19 +39,22 @@ export const usePaperHandlers = ({
           newY = maxY + paperSpacing;
         }
         
-        const wasmPaper = wasmEngine.createPaper(paperId, size, orientation, centerX, newY);
+        console.log(`Creating paper at position:`, { x: centerX, y: newY });
+        const wasmPaper = wasmEngine.createPaper(paperId, size, orientation.charAt(0).toUpperCase() + orientation.slice(1), centerX, newY);
         
         if (wasmPaper) {
           const allPapers = wasmEngine.getA4Papers();
           state.setPapers(allPapers);
-          console.log(`Created ${size} ${orientation} paper:`, paperId);
+          console.log(`Created ${size} ${orientation} paper:`, paperId, 'Total papers:', allPapers.length);
+        } else {
+          console.error('Failed to create paper in WASM');
         }
       } catch (error) {
         console.error('Error adding paper:', error);
         state.setError('Error adding paper');
       }
     },
-    [wasmEngine, state.papers, state.setPapers, state.setError, centerPosition]
+    [wasmEngine, state.setPapers, state.setError, centerPosition]
   );
 
   const handleRemovePaper = useCallback(

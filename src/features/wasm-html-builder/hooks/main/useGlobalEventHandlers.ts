@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useWasmBuilderState } from './useWasmBuilderState';
+import { useWasmBuilderState } from '../useWasmBuilderState';
 
 interface UseGlobalEventHandlersProps {
   state: ReturnType<typeof useWasmBuilderState>;
@@ -17,7 +17,8 @@ export const useGlobalEventHandlers = ({
       state.dragElementId
     );
     const handleGlobalMouseUp = dragHandlers.createGlobalMouseUpHandler(
-      state.isDragging
+      state.isDragging,
+      state.dragElementId
     );
 
     if (state.isDragging) {

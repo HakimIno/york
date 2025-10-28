@@ -263,17 +263,6 @@ const Controls: React.FC<ControlsProps> = React.memo(({
             <span className="hidden sm:inline">Grid</span>
           </Button>
 
-          <Button
-            size="sm"
-            variant={snapToGrid ? "secondary" : "ghost"}
-            onClick={onToggleSnapToGrid}
-            className="h-7 px-2"
-            title="Snap to Grid"
-          >
-            <Icon icon="lucide:magnet" className="h-3 w-3 mr-1" />
-            <span className="hidden sm:inline">Snap</span>
-          </Button>
-
           {/* Unit Selector */}
           <ClientOnly>
             <DropdownMenu>

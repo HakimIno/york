@@ -220,6 +220,7 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
     setDragElementId: state.setDragElementId,
     dragThrottleRef: state.dragThrottleRef,
     pendingUpdatesRef: state.pendingUpdatesRef,
+    undoRedo, // Add undoRedo to save state after drag
   });
 
   // Initialize global event handlers
@@ -228,26 +229,98 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
     dragHandlers,
   });
 
-  // Keyboard event handlers
+  // Keyboard event handlers - use refs to avoid re-creating handler on every element change
+  const elementsRef = React.useRef(state.elements);
+  const selectedElementIdRef = React.useRef(state.selectedElementId);
+  const canUndoRef = React.useRef(undoRedo.canUndo);
+  const canRedoRef = React.useRef(undoRedo.canRedo);
+  
+  React.useEffect(() => {
+    elementsRef.current = state.elements;
+    selectedElementIdRef.current = state.selectedElementId;
+    canUndoRef.current = undoRedo.canUndo;
+    canRedoRef.current = undoRedo.canRedo;
+  });
+
   useEffect(() => {
-    const handleKeyDown = createKeyboardHandlers({
-      selectedElementId: state.selectedElementId,
-      elements: state.elements,
-      copyPaste,
-      undoRedo,
-      onPasteElement: elementHandlers.handlePasteElement,
-      onUndo: undoRedoHandlers.handleUndo,
-      onRedo: undoRedoHandlers.handleRedo,
-      onDeleteElement: actions.deleteElement,
-    });
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      
+      // Don't interfere with text editing in inputs, textareas, or contentEditable elements
+      if (
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLInputElement ||
+        target.isContentEditable ||
+        target.getAttribute('contenteditable') === 'true'
+      ) {
+        return;
+      }
+
+      // Check if user has selected text on the page (they want to copy text, not elements)
+      const selection = window.getSelection();
+      const hasTextSelection = selection && selection.toString().length > 0;
+
+      // Copy element (Ctrl+C)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedElementIdRef.current && !hasTextSelection) {
+        e.preventDefault();
+        const element = elementsRef.current.find(el => el.id === selectedElementIdRef.current);
+        if (element) {
+          copyPaste.copyElement(element);
+        }
+      }
+
+      // Paste element (Ctrl+V)
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.key === 'v' &&
+        copyPaste.hasCopiedElement &&
+        !hasTextSelection
+      ) {
+        e.preventDefault();
+        elementHandlers.handlePasteElement();
+      }
+
+      // Undo (Cmd+Z)
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.key === 'z' &&
+        !e.shiftKey
+      ) {
+        e.preventDefault();
+        console.log('[Keyboard] Undo shortcut pressed | canUndo:', canUndoRef.current);
+        if (canUndoRef.current) {
+          undoRedoHandlers.handleUndo();
+        } else {
+          console.log('[Keyboard] Cannot undo - no more history');
+        }
+      }
+
+      // Redo (Cmd+Shift+Z or Cmd+Y)
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key === 'y' || (e.key === 'z' && e.shiftKey))
+      ) {
+        e.preventDefault();
+        const isShiftZ = e.key === 'z' && e.shiftKey;
+        console.log(`[Keyboard] Redo shortcut pressed (${isShiftZ ? 'Cmd+Shift+Z' : 'Cmd+Y'}) | canRedo:`, canRedoRef.current);
+        if (canRedoRef.current) {
+          undoRedoHandlers.handleRedo();
+        } else {
+          console.log('[Keyboard] Cannot redo - no more history');
+        }
+      }
+
+      // Delete element (Delete or Backspace key)
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementIdRef.current) {
+        e.preventDefault();
+        actions.deleteElement(selectedElementIdRef.current);
+      }
+    };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [
-    state.selectedElementId,
-    state.elements,
     copyPaste,
-    undoRedo,
     elementHandlers.handlePasteElement,
     undoRedoHandlers.handleUndo,
     undoRedoHandlers.handleRedo,
@@ -255,8 +328,7 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
   ]);
 
   // Memoize loading and error states
-  const isLoading = wasmEngine.state.isLoading;
-  const hasError = wasmEngine.state.error;
+  const { isLoading, error: hasError } = wasmEngine.state;
 
   return (
     <ErrorBoundary>

@@ -83,13 +83,12 @@ export const useWasmBuilderActions = ({
 
           setElements(prevElements => {
             const newElements = [...prevElements, element];
-            setTimeout(() => {
-              undoRedo.saveState(
-                newElements,
-                'create_element',
-                `Created ${type}`
-              );
-            }, 100);
+            // Save state immediately after adding element
+            undoRedo.saveState(
+              newElements,
+              'create_element',
+              `Created ${type}`
+            );
             return newElements;
           });
 
@@ -135,13 +134,12 @@ export const useWasmBuilderActions = ({
         if (success) {
           setElements(prevElements => {
             const newElements = prevElements.filter(el => el.id !== elementId);
-            setTimeout(() => {
-              undoRedo.saveState(
-                newElements,
-                'delete_element',
-                `Deleted element`
-              );
-            }, 100);
+            // Save state immediately after deleting element
+            undoRedo.saveState(
+              newElements,
+              'delete_element',
+              `Deleted element`
+            );
             return newElements;
           });
 

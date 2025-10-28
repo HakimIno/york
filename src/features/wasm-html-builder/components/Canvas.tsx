@@ -261,7 +261,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
       const timeoutId = setTimeout(() => {
         if (onSpatialQuery) {
           // Trigger WASM spatial index update through parent component
-          console.log('Updating spatial index bounds:', canvasSize);
+          // Spatial index bounds updated silently
         }
       }, 100); // Debounce the update
       
@@ -513,7 +513,6 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
         {paperConfigs.length > 0 ? (
           // Use new Paper components with enhanced functionality
           paperConfigs.map((paperConfig) => {
-            console.log('Rendering paper:', paperConfig);
             const paperElements = elementsByPaper[paperConfig.id] || [];
 
             return (
