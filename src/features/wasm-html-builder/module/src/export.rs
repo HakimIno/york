@@ -13,6 +13,45 @@ impl ExportManager {
         Self { elements, papers }
     }
 
+    /// Clean and modernize HTML content (convert deprecated tags to modern HTML/CSS)
+    fn clean_html_content(&self, content: &str) -> String {
+        let mut cleaned = content.to_string();
+        
+        // Convert <font color="..."> to <span style="color: ...">
+        // Simple regex-like replacement for basic cases
+        while let Some(start_idx) = cleaned.find("<font color=\"") {
+            if let Some(color_start) = cleaned[start_idx..].find('"') {
+                let color_start_abs = start_idx + color_start + 1;
+                if let Some(color_end) = cleaned[color_start_abs..].find('"') {
+                    let color = &cleaned[color_start_abs..color_start_abs + color_end];
+                    if let Some(tag_end) = cleaned[start_idx..].find('>') {
+                        let tag_end_abs = start_idx + tag_end + 1;
+                        
+                        // Find matching </font>
+                        if let Some(close_tag_idx) = cleaned[tag_end_abs..].find("</font>") {
+                            let close_tag_abs = tag_end_abs + close_tag_idx;
+                            let inner_content = &cleaned[tag_end_abs..close_tag_abs].to_string();
+                            
+                            // Replace with modern span
+                            let new_tag = format!("<span style=\"color: {}\">{}</span>", color, inner_content);
+                            cleaned.replace_range(start_idx..close_tag_abs + 7, &new_tag);
+                        } else {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        
+        cleaned
+    }
+
     /// Export HTML (complete implementation)
     pub fn export_html(&self, _options_json: &str) -> String {
         let elements = self.elements.lock().unwrap();
@@ -238,17 +277,40 @@ impl ExportManager {
             )
         };
 
+        // Helper to handle rich text content
+        let get_content = |content: &str| -> String {
+            if content.contains('<') && content.contains('>') {
+                // Already contains HTML, clean and modernize it
+                self.clean_html_content(content)
+            } else {
+                // Plain text, escape it
+                self.escape_html(content)
+            }
+        };
+
         match element.element_type.as_str() {
             "text" => {
                 html.push_str(&format!(
                     "    <div class=\"element element-text\" style=\"{}\">{}</div>\n",
-                    style, self.escape_html(&element.content)
+                    style, get_content(&element.content)
+                ));
+            }
+            "heading" => {
+                html.push_str(&format!(
+                    "    <h1 class=\"element element-heading\" style=\"{}\">{}</h1>\n",
+                    style, get_content(&element.content)
+                ));
+            }
+            "paragraph" => {
+                html.push_str(&format!(
+                    "    <p class=\"element element-paragraph\" style=\"{}\">{}</p>\n",
+                    style, get_content(&element.content)
                 ));
             }
             "button" => {
                 html.push_str(&format!(
                     "    <button class=\"element element-button\" style=\"{}\">{}</button>\n",
-                    style, self.escape_html(&element.content)
+                    style, get_content(&element.content)
                 ));
             }
             "input" => {
@@ -276,10 +338,10 @@ impl ExportManager {
                 html.push_str(&self.generate_line_html(element, &style));
             }
             _ => {
-                // Default: treat as div
+                // Default: treat as div with rich text support
                 html.push_str(&format!(
                     "    <div class=\"element\" style=\"{}\">{}</div>\n",
-                    style, self.escape_html(&element.content)
+                    style, get_content(&element.content)
                 ));
             }
         }

@@ -152,6 +152,7 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
     copyPaste,
     templateManager,
     getElementById: state.getElementById,
+    papers: state.papers,
     refreshElements: () => {
       if (wasmEngine.state.isLoaded) {
         const allElements = wasmEngine.getAllElements();
@@ -321,6 +322,7 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
             onSetRulerUnit={state.setRulerUnit}
             onClearTemplate={templateHandlers.handleClearTemplate}
             onExportHtml={actions.exportHtml}
+            onExportPdf={actions.exportPdf}
             onReset={() => {
               wasmEngine.reset();
               state.resetState();

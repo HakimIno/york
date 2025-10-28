@@ -48,6 +48,7 @@ interface ControlsProps {
   onSetRulerUnit: (unit: 'px' | 'mm' | 'cm' | 'in') => void;
   onClearTemplate: () => void;
   onExportHtml: () => void;
+  onExportPdf?: () => void;
   onReset: () => void;
   onCopyElement: () => void;
   onPasteElement: () => void;
@@ -90,6 +91,7 @@ const Controls: React.FC<ControlsProps> = React.memo(({
   onClearTemplate,
   onExportHtml,
   onReset,
+  onExportPdf,
   onCopyElement,
   onPasteElement,
   onUndo,
@@ -400,6 +402,18 @@ const Controls: React.FC<ControlsProps> = React.memo(({
           >
             <Icon icon="lucide:download" className="h-3 w-3 mr-1 dark:text-green-400 text-green-700" />
             <span className="hidden sm:inline dark:text-green-400 text-green-700">Export HTML</span>
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onExportPdf}
+            disabled={isProcessing || !hasElements}
+            className="h-7 px-2 bg-blue-50 dark:bg-blue-950 hover:dark:bg-blue-800 hover:bg-blue-100 border-blue-200 dark:border-blue-900 text-blue-700"
+            title="Export เป็นไฟล์ PDF (ผ่านหน้าพิมพ์ของเบราว์เซอร์)"
+          >
+            <Icon icon="lucide:file-text" className="h-3 w-3 mr-1 dark:text-blue-400 text-blue-700" />
+            <span className="hidden sm:inline dark:text-blue-400 text-blue-700">Export PDF</span>
           </Button>
 
           <Button

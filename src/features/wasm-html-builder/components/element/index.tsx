@@ -7,6 +7,7 @@ import React, {
     useMemo,
     useEffect,
 } from 'react';
+import ReactDOM from 'react-dom';
 import { Element } from '../../module/wasm-interface';
 import { useResizable } from '../../hooks/resizable';
 import { Icon } from '@iconify/react';
@@ -76,7 +77,13 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     const [editContent, setEditContent] = useState(element.content);
     const [isHovered, setIsHovered] = useState(false);
     const [isContentDirty, setIsContentDirty] = useState(false);
+    const [showTextToolbar, setShowTextToolbar] = useState(false);
+    const [toolbarPosition, setToolbarPosition] = useState({ x: 0, y: 0 });
+    const [showTextColorPicker, setShowTextColorPicker] = useState(false);
+    const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+    const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
     const elementRef = useRef<HTMLDivElement>(null);
+    const editableRef = useRef<HTMLDivElement>(null);
     const originalContentRef = useRef<string>(element.content);
 
     // Use the resizable hook
@@ -114,6 +121,96 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
         }
     }, [element.content, isEditing]);
 
+    // Sync edit content with editable div when entering edit mode
+    useEffect(() => {
+        if (isEditing && editableRef.current) {
+            // Set innerHTML and place cursor at the end
+            if (editableRef.current.innerHTML !== editContent) {
+                editableRef.current.innerHTML = editContent;
+            }
+            // Focus and place cursor at the end
+            editableRef.current.focus();
+            
+            // Place cursor at end of content
+            const range = document.createRange();
+            const sel = window.getSelection();
+            if (editableRef.current.childNodes.length > 0) {
+                range.selectNodeContents(editableRef.current);
+                range.collapse(false);
+                sel?.removeAllRanges();
+                sel?.addRange(range);
+            }
+        }
+    }, [isEditing, editContent]);
+
+    // Check active formats
+    const checkActiveFormats = useCallback(() => {
+        const formats = new Set<string>();
+        
+        if (document.queryCommandState('bold')) formats.add('bold');
+        if (document.queryCommandState('italic')) formats.add('italic');
+        if (document.queryCommandState('underline')) formats.add('underline');
+        
+        setActiveFormats(formats);
+    }, []);
+
+    // Detect text selection and show toolbar (optimized with debounce)
+    useEffect(() => {
+        if (!isEditing) return;
+
+        let timeoutId: NodeJS.Timeout;
+
+        const handleSelectionChange = () => {
+            // Debounce for better performance
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                const selection = window.getSelection();
+                if (!selection || selection.isCollapsed || !editableRef.current) {
+                    setShowTextToolbar(false);
+                    setShowTextColorPicker(false);
+                    setShowBgColorPicker(false);
+                    return;
+                }
+
+                // Check if selection is within our editable element
+                try {
+                    const range = selection.getRangeAt(0);
+                    const container = range.commonAncestorContainer;
+                    const isInside = editableRef.current.contains(
+                        container.nodeType === Node.TEXT_NODE ? container.parentNode : container
+                    );
+
+                    if (!isInside) {
+                        setShowTextToolbar(false);
+                        setShowTextColorPicker(false);
+                        setShowBgColorPicker(false);
+                        return;
+                    }
+
+                    // Calculate toolbar position relative to viewport (for Portal)
+                    const rect = range.getBoundingClientRect();
+                    setToolbarPosition({
+                        x: rect.left + rect.width / 2,
+                        y: rect.top - 60, // 60px above selection
+                    });
+                    setShowTextToolbar(true);
+                    checkActiveFormats();
+                } catch (e) {
+                    // Ignore errors
+                    setShowTextToolbar(false);
+                    setShowTextColorPicker(false);
+                    setShowBgColorPicker(false);
+                }
+            }, 50); // 50ms debounce
+        };
+
+        document.addEventListener('selectionchange', handleSelectionChange);
+        return () => {
+            clearTimeout(timeoutId);
+            document.removeEventListener('selectionchange', handleSelectionChange);
+        };
+    }, [isEditing, checkActiveFormats]);
+
     // Content editing handlers with improved state management
     const handleContentClick = useCallback(
         (e: React.MouseEvent) => {
@@ -136,6 +233,88 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
         },
         []
     );
+
+    // Helper function to apply formatting commands (optimized)
+    const applyFormatCommand = useCallback((command: string, value?: string) => {
+        if (!editableRef.current) return;
+
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed) return;
+
+        // For color commands, use modern approach with span and inline styles
+        if (command === 'foreColor' || command === 'backColor') {
+            const range = selection.getRangeAt(0);
+            const span = document.createElement('span');
+            
+            if (command === 'foreColor') {
+                span.style.color = value || '#000000';
+            } else if (command === 'backColor') {
+                span.style.backgroundColor = value || 'transparent';
+            }
+            
+            try {
+                range.surroundContents(span);
+            } catch (e) {
+                const contents = range.extractContents();
+                span.appendChild(contents);
+                range.insertNode(span);
+            }
+
+            // Keep selection
+            selection.removeAllRanges();
+            const newRange = document.createRange();
+            newRange.selectNodeContents(span);
+            selection.addRange(newRange);
+        } else {
+            // For other commands (bold, italic, underline), use execCommand
+            document.execCommand(command, false, value);
+        }
+
+        // Update content (batch update to reduce re-renders)
+        requestAnimationFrame(() => {
+            if (editableRef.current) {
+                const newHtml = editableRef.current.innerHTML;
+                setEditContent(newHtml);
+                setIsContentDirty(newHtml !== originalContentRef.current);
+            }
+        });
+    }, []);
+
+    // Apply inline style to selected text (optimized)
+    const applyInlineStyle = useCallback((styleKey: string, styleValue: string) => {
+        if (!editableRef.current) return;
+        
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed) return;
+
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.style[styleKey as any] = styleValue;
+        
+        try {
+            range.surroundContents(span);
+        } catch (e) {
+            // If surroundContents fails, manually extract and wrap
+            const contents = range.extractContents();
+            span.appendChild(contents);
+            range.insertNode(span);
+        }
+
+        // Keep selection
+        selection.removeAllRanges();
+        const newRange = document.createRange();
+        newRange.selectNodeContents(span);
+        selection.addRange(newRange);
+
+        // Update content (batch update to reduce re-renders)
+        requestAnimationFrame(() => {
+            if (editableRef.current) {
+                const newHtml = editableRef.current.innerHTML;
+                setEditContent(newHtml);
+                setIsContentDirty(newHtml !== originalContentRef.current);
+            }
+        });
+    }, []);
 
     const handleContentKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
@@ -168,6 +347,18 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
         onEndEdit();
     }, [element.id, editContent, isContentDirty, onContentChange, onEndEdit]);
 
+    // Optimized input handler for contentEditable
+    const handleEditableInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+        // Store value before requestAnimationFrame to avoid event pooling issues
+        const html = e.currentTarget.innerHTML;
+        
+        // Use requestAnimationFrame to batch updates
+        requestAnimationFrame(() => {
+            setEditContent(html);
+            setIsContentDirty(html !== originalContentRef.current);
+        });
+    }, []);
+
     const handleDelete = useCallback(
         (e: React.MouseEvent) => {
             e.stopPropagation();
@@ -197,13 +388,12 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     // Handle keyboard events on the element
     const handleElementKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
-            // Only handle keyboard events when element is selected and not editing
-            if (isSelected && !isEditing && !isLocked) {
+            if (!isSelected || isEditing || isLocked) return;
+            
                 if (e.key === 'Delete' || e.key === 'Backspace') {
                     e.preventDefault();
                     e.stopPropagation();
                     onDelete(element.id);
-                }
             }
         },
         [isSelected, isEditing, isLocked, element.id, onDelete]
@@ -697,14 +887,154 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
                 {/* Content */}
                 {isEditing ? (
                     <div className="w-full h-full relative">
-                        <textarea
-                            value={editContent}
-                            onChange={handleContentChange}
+                        {/* Text Formatting Toolbar - Clean White Theme */}
+                        {showTextToolbar && typeof window !== 'undefined' && ReactDOM.createPortal(
+                            <div
+                                className="fixed bg-white text-gray-900 rounded-xl shadow-lg border border-gray-200 px-1.5 py-1.5 flex items-center gap-0.5 pointer-events-auto"
+                                style={{
+                                    left: toolbarPosition.x,
+                                    top: toolbarPosition.y,
+                                    transform: 'translateX(-50%)',
+                                    zIndex: 999999,
+                                }}
+                                onMouseDown={(e) => e.preventDefault()}
+                            >
+                                {/* Bold */}
+                                <button
+                                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                        activeFormats.has('bold')
+                                            ? 'bg-blue-50 text-blue-600'
+                                            : 'hover:bg-gray-100 text-gray-600'
+                                    }`}
+                                    onClick={() => {
+                                        applyFormatCommand('bold');
+                                        checkActiveFormats();
+                                    }}
+                                    title="Bold (Ctrl+B)"
+                                >
+                                    <Icon icon="mdi:format-bold" className="w-4.5 h-4.5" />
+                                </button>
+
+                                {/* Italic */}
+                                <button
+                                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                        activeFormats.has('italic')
+                                            ? 'bg-blue-50 text-blue-600'
+                                            : 'hover:bg-gray-100 text-gray-600'
+                                    }`}
+                                    onClick={() => {
+                                        applyFormatCommand('italic');
+                                        checkActiveFormats();
+                                    }}
+                                    title="Italic (Ctrl+I)"
+                                >
+                                    <Icon icon="mdi:format-italic" className="w-4.5 h-4.5" />
+                                </button>
+
+                                {/* Underline */}
+                                <button
+                                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                        activeFormats.has('underline')
+                                            ? 'bg-blue-50 text-blue-600'
+                                            : 'hover:bg-gray-100 text-gray-600'
+                                    }`}
+                                    onClick={() => {
+                                        applyFormatCommand('underline');
+                                        checkActiveFormats();
+                                    }}
+                                    title="Underline (Ctrl+U)"
+                                >
+                                    <Icon icon="mdi:format-underline" className="w-4.5 h-4.5" />
+                                </button>
+
+                                <div className="w-px h-5 bg-gray-300 mx-1.5" />
+
+                                {/* Font Size Increase */}
+                                <button
+                                    className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-600"
+                                    onClick={() => applyInlineStyle('fontSize', '20px')}
+                                    title="Larger"
+                                >
+                                    <Icon icon="mdi:format-font-size-increase" className="w-4.5 h-4.5" />
+                                </button>
+
+                                {/* Font Size Decrease */}
+                                <button
+                                    className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-600"
+                                    onClick={() => applyInlineStyle('fontSize', '12px')}
+                                    title="Smaller"
+                                >
+                                    <Icon icon="mdi:format-font-size-decrease" className="w-4.5 h-4.5" />
+                                </button>
+
+                                <div className="w-px h-5 bg-gray-300 mx-1.5" />
+
+                                {/* Text Color Picker */}
+                                <div className="relative">
+                                    <button
+                                        className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-600"
+                                        onClick={() => {
+                                            setShowTextColorPicker(!showTextColorPicker);
+                                            setShowBgColorPicker(false);
+                                        }}
+                                        title="Text Color"
+                                    >
+                                        <Icon icon="mdi:format-color-text" className="w-4.5 h-4.5" />
+                                    </button>
+                                    {showTextColorPicker && (
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 p-2 bg-white rounded-lg shadow-lg border border-gray-200">
+                                            <input
+                                                type="color"
+                                                className="w-32 h-8 rounded cursor-pointer"
+                                                onChange={(e) => {
+                                                    applyFormatCommand('foreColor', e.target.value);
+                                                    setShowTextColorPicker(false);
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Background Color Picker */}
+                                <div className="relative">
+                                    <button
+                                        className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-600"
+                                        onClick={() => {
+                                            setShowBgColorPicker(!showBgColorPicker);
+                                            setShowTextColorPicker(false);
+                                        }}
+                                        title="Highlight Color"
+                                    >
+                                        <Icon icon="mdi:format-color-highlight" className="w-4.5 h-4.5" />
+                                    </button>
+                                    {showBgColorPicker && (
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 p-2 bg-white rounded-lg shadow-lg border border-gray-200">
+                                            <input
+                                                type="color"
+                                                className="w-32 h-8 rounded cursor-pointer"
+                                                onChange={(e) => {
+                                                    applyFormatCommand('backColor', e.target.value);
+                                                    setShowBgColorPicker(false);
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>,
+                            document.body
+                        )}
+
+                        <div
+                            ref={editableRef}
+                            contentEditable
+                            suppressContentEditableWarning
+                            className="w-full h-full bg-transparent border-none outline-none"
+                            style={textareaStyles}
+                            onInput={handleEditableInput}
                             onKeyDown={handleContentKeyDown}
                             onBlur={handleContentBlur}
-                            className="w-full h-full resize-none bg-transparent border-none outline-none"
-                            style={textareaStyles}
-                            autoFocus
                         />
                         {/* Edit indicator */}
                         {isContentDirty && (
@@ -729,7 +1059,9 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
                                         : 'flex-start',
                         }}
                     >
-                        {element.content || (
+                        {element.content ? (
+                            <div dangerouslySetInnerHTML={{ __html: element.content }} />
+                        ) : (
                             <span className="text-gray-400 italic">Click to edit...</span>
                         )}
                     </div>

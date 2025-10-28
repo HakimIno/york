@@ -26,6 +26,7 @@ interface UseWasmBuilderActionsProps {
   refreshElements: () => void;
   // Performance optimization: HashMap for O(1) element lookup
   getElementById: (id: string) => Element | undefined;
+  papers?: any[];
 }
 
 export const useWasmBuilderActions = ({
@@ -48,6 +49,7 @@ export const useWasmBuilderActions = ({
   templateManager,
   refreshElements,
   getElementById,
+  papers,
 }: UseWasmBuilderActionsProps) => {
   // Element creation
   const createElement = useCallback(
@@ -580,6 +582,262 @@ ${exportResult.html}
     }
   }, [wasmEngine]);
 
+  // Export PDF (client-side print to PDF using exported HTML)
+  const exportPdf = useCallback(() => {
+    try {
+      console.log('Starting PDF export...');
+
+      const exportResult = wasmEngine.exportHtml({
+        include_responsive: true,
+        minify_css: false,
+        css_framework: 'None',
+        export_format: 'Html',
+      });
+
+      if (!exportResult) {
+        console.error('Export result is empty');
+        if (typeof window !== 'undefined' && 'alert' in window) {
+          alert('❌ เกิดข้อผิดพลาดในการ Export PDF');
+        }
+        return;
+      }
+
+      const now = new Date();
+      const title = `HTML Builder Export PDF - ${now.toLocaleDateString('th-TH')}`;
+
+      // Get paper dimensions from actual papers data
+      // If no papers, use default A4 (794px × 1123px)
+      const firstPaper = papers && papers.length > 0 ? papers[0] : null;
+      const A4_WIDTH_PX = firstPaper?.width || 794;
+      const A4_HEIGHT_PX = firstPaper?.height || 1123;
+      
+      // Calculate mm from pixels (96 DPI: 96px = 25.4mm)
+      const DPI = 96;
+      const A4_WIDTH_MM = (A4_WIDTH_PX * 25.4) / DPI;
+      const A4_HEIGHT_MM = (A4_HEIGHT_PX * 25.4) / DPI;
+
+      const printHtml = `<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${title}</title>
+  <style>
+    /* Base Reset & Layout */
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+    }
+    html { 
+      width: 100%;
+      height: 100%;
+    }
+    body { 
+      margin: 0; 
+      padding: 0;
+      background: #f5f5f5;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Paper Container - Screen Display */
+    .paper-container {
+      width: 100%;
+      min-height: 100vh;
+      background-color: #f5f5f5;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* A4 Paper - Screen Display (keep aspect ratio with shadow) */
+    .a4-paper {
+      width: ${A4_WIDTH_PX}px;
+      min-height: ${A4_HEIGHT_PX}px;
+      background-color: white;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+    }
+
+    /* Elements - Absolute positioning within paper */
+    .element {
+      position: absolute;
+      box-sizing: border-box;
+    }
+
+    /* Export Styles from WASM */
+${exportResult.css}
+
+    /* Print/PDF Media Query - Dynamic sizing based on actual paper dimensions */
+    @media print {
+      * {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      html, body {
+        width: 100% !important;
+        height: auto !important;
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .paper-container {
+        width: 100% !important;
+        min-height: auto !important;
+        background: white !important;
+        padding: 0 !important;
+        display: block !important;
+      }
+
+      /* Exact paper page size for printing */
+      @page {
+        size: ${A4_WIDTH_MM}mm ${A4_HEIGHT_MM}mm;
+        margin: 0;
+      }
+
+      .a4-paper {
+        width: ${A4_WIDTH_MM}mm !important;
+        height: ${A4_HEIGHT_MM}mm !important;
+        min-height: ${A4_HEIGHT_MM}mm !important;
+        max-height: ${A4_HEIGHT_MM}mm !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        page-break-after: always;
+        position: relative;
+        overflow: visible;
+        background: white;
+        display: block;
+      }
+
+      .a4-paper:last-child {
+        page-break-after: avoid;
+      }
+
+      /* Ensure elements scale properly */
+      .element {
+        position: absolute !important;
+        box-sizing: border-box !important;
+      }
+
+      .element-text {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow: visible;
+      }
+
+      .element-button,
+      .element-input {
+        background: white;
+        border: 1px solid #ccc;
+      }
+
+      .element-table {
+        table-layout: fixed;
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .element-table td,
+      .element-table th {
+        border: 1px solid #ccc;
+        padding: 4px 8px;
+        word-break: break-word;
+      }
+
+      .form-field,
+      .checkbox-element {
+        display: flex;
+        align-items: center;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+    }
+
+    /* Screen/Preview - Responsive within container */
+    @media screen {
+      .paper-container {
+        background: #f5f5f5;
+        padding: 20px;
+      }
+
+      .a4-paper {
+        width: ${A4_WIDTH_PX}px;
+        margin: 0 auto 20px auto;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="paper-container">
+${exportResult.html}
+  </div>
+
+<script>
+  (function() {
+    function ready(fn){ 
+      if(document.readyState !== 'loading'){ 
+        fn(); 
+      } else { 
+        document.addEventListener('DOMContentLoaded', fn); 
+      } 
+    }
+    
+    ready(function(){
+      try {
+        // Wait a bit for rendering
+        setTimeout(function(){
+          window.focus();
+          // Auto-print for PDF
+          window.print();
+        }, 500);
+        
+        // Close window after print (optional - depends on browser)
+        window.onafterprint = function(){ 
+          // Don't auto-close to allow user to verify
+          // window.close(); 
+        };
+      } catch (e) { 
+        console.error('Print failed', e); 
+      }
+    });
+  })();
+</script>
+</body>
+</html>`;
+
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert('❌ ไม่สามารถเปิดหน้าต่างสำหรับพิมพ์ได้ กรุณาอนุญาต Pop-up');
+        return;
+      }
+      
+      printWindow.document.open();
+      printWindow.document.write(printHtml);
+      printWindow.document.close();
+
+      console.log('PDF export window opened - Paper dimensions:', {
+        screen: `${A4_WIDTH_PX}px × ${A4_HEIGHT_PX}px`,
+        print: `${A4_WIDTH_MM.toFixed(1)}mm × ${A4_HEIGHT_MM.toFixed(1)}mm`,
+        source: firstPaper ? 'User defined' : 'Default A4'
+      });
+    } catch (error) {
+      console.error('Error during PDF export:', error);
+      if (typeof window !== 'undefined' && 'alert' in window) {
+        alert('❌ เกิดข้อผิดพลาดในการ Export PDF: ' + (error as Error).message);
+      }
+    }
+  }, [wasmEngine, papers]);
+
   // Cell style handlers
   const handleUpdateTableCellStyle = useCallback(
     (elementId: string, row: number, col: number, style: any) => {
@@ -630,6 +888,7 @@ ${exportResult.html}
     handleSizeChange,
     handlePositionChange,
     exportHtml,
+    exportPdf,
     handleUpdateTableCellStyle,
     handleGetTableCellStyle,
     handleGetTableDimensions,
