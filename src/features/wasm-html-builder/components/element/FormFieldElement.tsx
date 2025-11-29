@@ -66,6 +66,11 @@ const FormFieldElement: React.FC<FormFieldElementProps> = ({
   const [editValue, setEditValue] = useState('');
   const elementRef = useRef<HTMLDivElement>(null);
 
+  // Refs to prevent keyboard handler recreation
+  const elementIdRef = useRef<string>(element.id);
+  const onDeleteRef = useRef(onDelete);
+  const onStartEditRef = useRef(onStartEdit);
+
   // Parse form field data from element content
   const formFieldData: FormFieldData = useMemo(() => {
     try {
@@ -140,6 +145,19 @@ const FormFieldElement: React.FC<FormFieldElementProps> = ({
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false);
   }, []);
+
+  // Keep refs in sync with latest values
+  React.useEffect(() => {
+    elementIdRef.current = element.id;
+  }, [element.id]);
+
+  React.useEffect(() => {
+    onDeleteRef.current = onDelete;
+  }, [onDelete]);
+
+  React.useEffect(() => {
+    onStartEditRef.current = onStartEdit;
+  }, [onStartEdit]);
 
   // Label editing handlers
   const handleLabelClick = useCallback(
@@ -271,28 +289,30 @@ const FormFieldElement: React.FC<FormFieldElementProps> = ({
     [element.id, onCopy]
   );
 
-  // Handle keyboard events on the element
+  // Handle keyboard events on the element - optimized with refs
   const handleElementKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       // ถ้าอยู่ในโหมดแก้ไข label หรือ value ไม่ต้องทำอะไร (ให้ input field จัดการเอง)
       if (isEditingLabel || isEditingValue) {
         return;
       }
-      
+
       // Only handle keyboard events when element is selected and not editing
       if (isSelected && !isEditing && !isLocked) {
         if (e.key === 'Enter') {
           e.preventDefault();
           e.stopPropagation();
-          onStartEdit(element.id);
+          // Use ref to get latest value without recreating handler
+          onStartEditRef.current(elementIdRef.current);
         } else if (e.key === 'Delete' || e.key === 'Backspace') {
           e.preventDefault();
           e.stopPropagation();
-          onDelete(element.id);
+          // Use ref to get latest value without recreating handler
+          onDeleteRef.current(elementIdRef.current);
         }
       }
     },
-    [isSelected, isEditing, isLocked, isEditingLabel, isEditingValue, element.id, onDelete, onStartEdit]
+    [isSelected, isEditing, isLocked, isEditingLabel, isEditingValue]
   );
 
   // Element styles
@@ -374,11 +394,10 @@ const FormFieldElement: React.FC<FormFieldElementProps> = ({
       return (
         <div
           key={direction}
-          className={`absolute border-2 border-white rounded-sm shadow-md ${
-            isResizing && resizeDirection === direction
+          className={`absolute border-2 border-white rounded-sm shadow-md ${isResizing && resizeDirection === direction
               ? 'bg-red-500'
               : 'bg-blue-500 hover:bg-blue-600'
-          }`}
+            }`}
           style={{
             left: position.x,
             top: position.y,
@@ -429,11 +448,10 @@ const FormFieldElement: React.FC<FormFieldElementProps> = ({
 
           <button
             onClick={handleToggleLock}
-            className={`w-6 h-6 text-white rounded-full text-xs font-bold flex items-center justify-center shadow-lg ${
-              isLocked
+            className={`w-6 h-6 text-white rounded-full text-xs font-bold flex items-center justify-center shadow-lg ${isLocked
                 ? 'bg-amber-500 hover:bg-amber-600'
                 : 'bg-gray-400 hover:bg-gray-500'
-            }`}
+              }`}
             title={isLocked ? 'ปลดล็อค' : 'ล็อค'}
           >
             <Icon
@@ -477,10 +495,10 @@ const FormFieldElement: React.FC<FormFieldElementProps> = ({
         onMouseDown={
           !isEditing && !isResizing && !isLocked
             ? e => {
-                e.stopPropagation();
-                e.nativeEvent.stopImmediatePropagation();
-                onStartDrag(e, element.id);
-              }
+              e.stopPropagation();
+              e.nativeEvent.stopImmediatePropagation();
+              onStartDrag(e, element.id);
+            }
             : undefined
         }
         onMouseEnter={handleMouseEnter}

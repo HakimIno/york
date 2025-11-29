@@ -86,6 +86,10 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     const editableRef = useRef<HTMLDivElement>(null);
     const originalContentRef = useRef<string>(element.content);
 
+    // Refs to prevent keyboard handler recreation
+    const elementIdRef = useRef<string>(element.id);
+    const onDeleteRef = useRef(onDelete);
+
     // Use the resizable hook
     const {
         isResizing,
@@ -111,6 +115,15 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     const handleMouseLeave = useCallback(() => {
         setIsHovered(false);
     }, []);
+
+    // Keep refs in sync with latest values
+    useEffect(() => {
+        elementIdRef.current = element.id;
+    }, [element.id]);
+
+    useEffect(() => {
+        onDeleteRef.current = onDelete;
+    }, [onDelete]);
 
     // Update edit content when element content changes
     useEffect(() => {
@@ -385,7 +398,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
         [element.id, onCopy]
     );
 
-    // Handle keyboard events on the element
+    // Handle keyboard events on the element - optimized with refs
     const handleElementKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
             if (!isSelected || isEditing || isLocked) return;
@@ -393,10 +406,11 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 e.preventDefault();
                 e.stopPropagation();
-                onDelete(element.id);
+                // Use ref to get latest value without recreating handler
+                onDeleteRef.current(elementIdRef.current);
             }
         },
-        [isSelected, isEditing, isLocked, element.id, onDelete]
+        [isSelected, isEditing, isLocked]
     );
 
     // Element styles - เรียบง่าย ตรงไปตรงมา
