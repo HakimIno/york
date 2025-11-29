@@ -386,8 +386,8 @@ impl ExportManager {
             for (_row_index, row) in table_data.rows.iter().enumerate() {
                 html.push_str("      <tr>\n");
                 for (col_index, cell) in row.cells.iter().enumerate() {
-                    // Skip merged cells that are marked as merged (rowspan=0 and colspan=0)
-                    if cell.rowspan == 0 && cell.colspan == 0 {
+                    // Skip merged cells that are marked as merged (row_span=0 and col_span=0)
+                    if cell.row_span == 0 && cell.col_span == 0 {
                         continue;
                     }
                     
@@ -421,10 +421,10 @@ impl ExportManager {
                                            cell_font_size, cell_font_family, cell_font_weight, cell_font_style,
                                            cell_color, cell_background_color, cell_text_align, cell_padding);
                     
-                    if cell.rowspan > 1 || cell.colspan > 1 {
+                    if cell.row_span > 1 || cell.col_span > 1 {
                         html.push_str(&format!(
                             "        <td rowspan=\"{}\" colspan=\"{}\" style=\"{}\">{}</td>\n",
-                            cell.rowspan, cell.colspan, cell_style,
+                            cell.row_span, cell.col_span, cell_style,
                             self.escape_html(&cell.content)
                         ));
                     } else {

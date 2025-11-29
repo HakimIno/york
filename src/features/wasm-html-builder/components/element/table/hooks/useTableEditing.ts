@@ -219,7 +219,7 @@ export const useTableEditing = ({
               newCol = Math.max(0, currentCell.col - 1);
               break;
             case 'ArrowRight':
-              newCol = Math.min(tableData.column_widths.length - 1, currentCell.col + 1);
+              newCol = Math.min(tableData.columnWidths.length - 1, currentCell.col + 1);
               break;
           }
           
@@ -415,7 +415,7 @@ export const useTableEditing = ({
         e.preventDefault();
         const allCells: SelectedCell[] = [];
         for (let r = 0; r < tableData.rows.length; r++) {
-          for (let c = 0; c < tableData.column_widths.length; c++) {
+          for (let c = 0; c < tableData.columnWidths.length; c++) {
             allCells.push({ row: r, col: c });
           }
         }

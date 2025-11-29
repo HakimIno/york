@@ -323,7 +323,7 @@ const FormFieldElement: React.FC<FormFieldElementProps> = ({
       top: element.y,
       width: element.width,
       height: element.height,
-      zIndex: element.z_index,
+      zIndex: element.zIndex,
       fontSize: element.style.fontSize,
       fontFamily: element.style.fontFamily,
       fontWeight: element.style.fontWeight as any,
@@ -404,7 +404,7 @@ const FormFieldElement: React.FC<FormFieldElementProps> = ({
             width: HANDLE_SIZE,
             height: HANDLE_SIZE,
             cursor: cursor,
-            zIndex: element.z_index + 1000,
+            zIndex: element.zIndex + 1000,
             transition: 'none',
             pointerEvents: 'auto',
           }}
@@ -433,7 +433,7 @@ const FormFieldElement: React.FC<FormFieldElementProps> = ({
           style={{
             left: element.x + element.width + 6,
             top: element.y,
-            zIndex: element.z_index + 1001,
+            zIndex: element.zIndex + 1001,
             transition: 'none',
           }}
         >
@@ -473,7 +473,7 @@ const FormFieldElement: React.FC<FormFieldElementProps> = ({
           style={{
             left: element.x + element.width + 6,
             top: element.y,
-            zIndex: element.z_index + 1001,
+            zIndex: element.zIndex + 1001,
           }}
         >
           {isEditingLabel ? 'แก้ไข Label' : 'แก้ไข Value'}

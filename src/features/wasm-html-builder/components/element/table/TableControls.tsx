@@ -26,7 +26,7 @@ const TableControls: React.FC<TableControlsProps> = ({
             style={{
               left: element.x - 28,
               top: element.y + rowTop + (currentRowHeight / 2) - 12,
-              zIndex: element.z_index + 1002,
+              zIndex: element.zIndex + 1002,
             }}
           >
             <Button
@@ -50,8 +50,8 @@ const TableControls: React.FC<TableControlsProps> = ({
 
       {/* Column controls with dynamic positioning */}
       {colPositions.map((colLeft, colIndex) => {
-        const currentColumnWidth = Math.max(tableData.column_widths[colIndex] || 80, 80);
-        const isDisabled = tableData.column_widths.length <= 1;
+        const currentColumnWidth = Math.max(tableData.columnWidths[colIndex] || 80, 80);
+        const isDisabled = tableData.columnWidths.length <= 1;
 
         return (
           <div
@@ -60,7 +60,7 @@ const TableControls: React.FC<TableControlsProps> = ({
             style={{
               left: element.x + colLeft + (currentColumnWidth / 2) - 12,
               top: element.y - 32,
-              zIndex: element.z_index + 1002,
+              zIndex: element.zIndex + 1002,
             }}
           >
             <Button

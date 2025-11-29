@@ -17,7 +17,7 @@ export const calculateTableDimensions = (
   const padding = 32;
 
   // Calculate total width from actual column widths
-  const totalWidth = tableData.column_widths.reduce(
+  const totalWidth = tableData.columnWidths.reduce(
     (sum, width) => sum + Math.max(width, minColumnWidth),
     0
   );
@@ -43,17 +43,17 @@ export const calculateTablePositions = (
   cacheRef: React.MutableRefObject<Map<string, { rowTop: number; colLeft: number }>>,
   lastTableDataRef: React.MutableRefObject<string>
 ): TablePositions => {
-  if (!tableData || !tableData.rows || !tableData.column_widths) {
+  if (!tableData || !tableData.rows || !tableData.columnWidths) {
     return { rowPositions: [], colPositions: [] };
   }
 
   // Safety check for empty arrays
-  if (tableData.rows.length === 0 || tableData.column_widths.length === 0) {
+  if (tableData.rows.length === 0 || tableData.columnWidths.length === 0) {
     return { rowPositions: [], colPositions: [] };
   }
 
   // Create a more efficient cache key
-  const currentTableDataKey = `${tableData.rows.length}-${tableData.column_widths.length}-${tableData.rows.map(r => r?.height || 20).join(',')}-${tableData.column_widths.join(',')}`;
+  const currentTableDataKey = `${tableData.rows.length}-${tableData.columnWidths.length}-${tableData.rows.map(r => r?.height || 20).join(',')}-${tableData.columnWidths.join(',')}`;
 
   // Check if cache is still valid
   if (lastTableDataRef.current === currentTableDataKey && cacheRef.current.size > 0) {
@@ -66,7 +66,7 @@ export const calculateTablePositions = (
       if (cached) cachedRowPositions.push(cached.rowTop);
     }
 
-    for (let i = 0; i < tableData.column_widths.length; i++) {
+    for (let i = 0; i < tableData.columnWidths.length; i++) {
       const cached = cacheRef.current.get(`col-${i}`);
       if (cached) cachedColPositions.push(cached.colLeft);
     }
@@ -90,10 +90,10 @@ export const calculateTablePositions = (
 
   // Calculate column positions with safety checks
   let colLeft = 0;
-  for (let i = 0; i < tableData.column_widths.length; i++) {
+  for (let i = 0; i < tableData.columnWidths.length; i++) {
     colPositions.push(colLeft);
     cacheRef.current.set(`col-${i}`, { rowTop: 0, colLeft });
-    const colWidth = tableData.column_widths[i];
+    const colWidth = tableData.columnWidths[i];
     colLeft += Math.max(typeof colWidth === 'number' ? colWidth : 64, 64);
   }
 

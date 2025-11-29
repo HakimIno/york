@@ -57,7 +57,7 @@ export const createDragHandlers = ({
         console.warn('Element not found in WASM, syncing...');
         // Try to sync this element to WASM
         const newWasmElement = wasmEngine.createElement(
-          element.element_type,
+          element.elementType,
           element.x,
           element.y
         );

@@ -37,7 +37,7 @@ const TableResizeHandles: React.FC<TableResizeHandlesProps> = ({
   }
 
   return (
-    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: element.z_index + 1005 }}>
+    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: element.zIndex + 1005 }}>
 
       {/* Row hover lines - only show when hovering */}
       {tableData.rows.map((row, rowIndex) => {
@@ -56,7 +56,7 @@ const TableResizeHandles: React.FC<TableResizeHandlesProps> = ({
               left: '0px',
               width: '100%',
               height: '1px',
-              zIndex: element.z_index + 1005,
+              zIndex: element.zIndex + 1005,
             }}
             onMouseEnter={() => onRowHover(rowIndex)}
             onMouseLeave={() => onRowHover(null)}
@@ -66,7 +66,7 @@ const TableResizeHandles: React.FC<TableResizeHandlesProps> = ({
       })}
 
       {/* Column hover lines - only show when hovering */}
-      {tableData.column_widths.map((colWidth, colIndex) => {
+      {tableData.columnWidths.map((colWidth, colIndex) => {
         const colLeft = getColumnPosition(colIndex);
         const isHovered = hoveredColIndex === colIndex;
 
@@ -82,7 +82,7 @@ const TableResizeHandles: React.FC<TableResizeHandlesProps> = ({
               top: '0px',
               height: '100%',
               width: '1px',
-              zIndex: element.z_index + 1005,
+              zIndex: element.zIndex + 1005,
             }}
             onMouseEnter={() => onColumnHover(colIndex)}
             onMouseLeave={() => onColumnHover(null)}

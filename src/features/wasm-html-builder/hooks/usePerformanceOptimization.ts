@@ -109,7 +109,7 @@ export function usePerformanceOptimization(
     } as Element),
     resetElement: (element: Element) => {
       element.id = '';
-      element.component_id = '';
+      element.componentId = '';
       element.content = '';
       element.style = {
         fontSize: 14,

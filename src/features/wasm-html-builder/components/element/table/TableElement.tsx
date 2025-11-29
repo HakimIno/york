@@ -44,7 +44,7 @@ const TableElement: React.FC<TableElementProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const tableRef = useRef<HTMLTableElement | null>(null);
 
-  const tableData = element.table_data || null;
+  const tableData = element.tableData || null;
 
   // Performance optimizations
   const positionCacheRef = useRef<Map<string, { rowTop: number; colLeft: number }>>(new Map());
@@ -109,12 +109,12 @@ const TableElement: React.FC<TableElementProps> = ({
   // Performance: Optimized position calculations with better caching
   const { rowPositions, colPositions } = useMemo(() => {
     return calculateTablePositions(tableData, positionCacheRef, lastTableDataRef);
-  }, [tableData?.rows, tableData?.column_widths]);
+  }, [tableData?.rows, tableData?.columnWidths]);
 
   // Performance: Memoized table dimensions calculation
   const calculateTableDimensionsCallback = useMemo(() => {
     return () => calculateTableDimensions(tableData, element);
-  }, [tableData?.column_widths, tableData?.rows, element.width, element.height]);
+  }, [tableData?.columnWidths, tableData?.rows, element.width, element.height]);
 
   // Performance: Optimized debounced resize function
   const debouncedResize = useMemo(() => {
@@ -145,11 +145,11 @@ const TableElement: React.FC<TableElementProps> = ({
 
       // Update column widths proportionally
       if (tableData && width > 0) {
-        const totalCurrentWidth = tableData.column_widths.reduce((sum, w) => sum + w, 0);
+        const totalCurrentWidth = tableData.columnWidths.reduce((sum, w) => sum + w, 0);
         const availableWidth = width - 32; // Subtract padding
         const scaleFactor = availableWidth / totalCurrentWidth;
 
-        tableData.column_widths = tableData.column_widths.map(w =>
+        tableData.columnWidths = tableData.columnWidths.map(w =>
           Math.max(w * scaleFactor, 80) // Minimum 80px width
         );
       }
@@ -402,7 +402,7 @@ const TableElement: React.FC<TableElementProps> = ({
                   width: HANDLE_SIZE ,
                   height: HANDLE_SIZE ,
                   cursor: cursor,
-                  zIndex: element.z_index + 1003,
+                  zIndex: element.zIndex + 1003,
                   transition: 'background-color 0.15s ease-in-out',
                   pointerEvents: 'auto',
                 }}

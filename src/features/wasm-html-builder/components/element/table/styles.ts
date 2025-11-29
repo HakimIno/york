@@ -19,7 +19,7 @@ export const getElementStyles = (
     top: element.y,
     width: element.width,
     height: element.height,
-    zIndex: element.z_index,
+    zIndex: element.zIndex,
     fontSize: element.style.fontSize,
     fontFamily: element.style.fontFamily,
     fontWeight: element.style.fontWeight as any,
@@ -109,7 +109,7 @@ export const getCellStyles = (
   const isFirstRow = row === 0;
   const isLastRow = row === (tableData?.rows.length || 1) - 1;
   const isFirstCol = col === 0;
-  const isLastCol = col === (tableData?.column_widths.length || 1) - 1;
+  const isLastCol = col === (tableData?.columnWidths.length || 1) - 1;
 
 
   // Convert WASM snake_case to camelCase for style properties
@@ -182,8 +182,8 @@ export const getCellStyles = (
     ...baseCellStyle,
     backgroundColor: getFinalBackgroundColor(),
     color: getTextColor(),
-    minWidth: Math.max(tableData?.column_widths[col] || 64, 30), // Minimum 30px width
-    width: tableData?.column_widths[col] || 64,
+    minWidth: Math.max(tableData?.columnWidths[col] || 64, 30), // Minimum 30px width
+    width: tableData?.columnWidths[col] || 64,
     height: Math.max(tableData?.rows[row]?.height || 20, 15), // Minimum 15px height
     borderTop: getBorderStyle(isFirstRow, isSelected),
     borderLeft: getBorderStyle(isFirstCol, isSelected),

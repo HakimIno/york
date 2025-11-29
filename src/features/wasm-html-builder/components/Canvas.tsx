@@ -575,11 +575,8 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
                         isDragging={isDragging && dragElementId === element.id}
                         isLocked={lockedElements.has(element.id)}
                         showBorders={showElementBorders}
-                        onPositionChange={(elementId, newX, newY) => {
-                          // Convert relative coordinates back to global coordinates
-                          // Allow elements to move freely without constraints
-                          onPositionChange(elementId, newX + paperConfig.x, newY + paperConfig.y + 32);
-                        }}
+                        paperOffset={{ x: paperConfig.x, y: paperConfig.y + 32 }}
+                        onPositionChange={onPositionChange}
                         onSizeChange={onSizeChange}
                         onContentChange={onContentChange}
                         onStyleChange={onStyleChange}
@@ -649,6 +646,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
               isDragging={isDragging && dragElementId === element.id}
               isLocked={lockedElements.has(element.id)}
               showBorders={showElementBorders}
+              paperOffset={{ x: 0, y: 0 }}
               onPositionChange={onPositionChange}
               onSizeChange={onSizeChange}
               onContentChange={onContentChange}
@@ -690,6 +688,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
               isDragging={isDragging && dragElementId === element.id}
               isLocked={lockedElements.has(element.id)}
               showBorders={showElementBorders}
+              paperOffset={{ x: 0, y: 0 }}
               onPositionChange={onPositionChange}
               onSizeChange={onSizeChange}
               onContentChange={onContentChange}

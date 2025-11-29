@@ -11,6 +11,7 @@ mod transform;
 mod table;
 mod export;
 mod spatial_index;
+mod style_history;
 
 use types::*;
 use paper::PaperManager;
@@ -20,6 +21,7 @@ use transform::TransformManager;
 use table::TableManager;
 use export::ExportManager;
 use spatial_index::SpatialIndexManager;
+use style_history::StyleHistory;
 
 // Main HTML Builder Engine
 #[wasm_bindgen]
@@ -32,6 +34,7 @@ pub struct HTMLBuilderEngine {
     table_manager: TableManager,
     export_manager: ExportManager,
     spatial_index_manager: SpatialIndexManager,
+    style_history: Arc<Mutex<StyleHistory>>,
 }
 
 #[wasm_bindgen(start)]
@@ -55,6 +58,7 @@ impl HTMLBuilderEngine {
         let table_manager = TableManager::new(Arc::clone(&elements));
         let export_manager = ExportManager::new(Arc::clone(&elements), Arc::clone(&papers));
         let spatial_index_manager = SpatialIndexManager::new((0.0, 0.0, 2000.0, 2000.0), 100.0);
+        let style_history = Arc::new(Mutex::new(StyleHistory::new(50))); // 50 entries max
         
         HTMLBuilderEngine {
             paper_manager,
@@ -64,6 +68,7 @@ impl HTMLBuilderEngine {
             table_manager,
             export_manager,
             spatial_index_manager,
+            style_history,
         }
     }
 
@@ -490,5 +495,81 @@ impl HTMLBuilderEngine {
     #[wasm_bindgen]
     pub fn auto_optimize_spatial_index(&self) -> bool {
         self.spatial_index_manager.auto_optimize()
+    }
+
+    // Style History methods
+    /// Save style to history
+    #[wasm_bindgen]
+    pub fn save_style_to_history(&self, style_json: &str) -> bool {
+        if let Ok(style) = serde_json::from_str::<ElementStyle>(style_json) {
+            if let Ok(mut history) = self.style_history.lock() {
+                history.add_style(style);
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Get style history (returns JSON array of styles)
+    #[wasm_bindgen]
+    pub fn get_style_history(&self, count: usize) -> String {
+        if let Ok(history) = self.style_history.lock() {
+            let styles = history.get_recent_styles(count);
+            serde_json::to_string(&styles).unwrap_or_else(|_| "[]".to_string())
+        } else {
+            "[]".to_string()
+        }
+    }
+
+    /// Get last style from history
+    #[wasm_bindgen]
+    pub fn get_last_style(&self) -> String {
+        if let Ok(history) = self.style_history.lock() {
+            if let Some(style) = history.get_last_style() {
+                serde_json::to_string(&style).unwrap_or_else(|_| "null".to_string())
+            } else {
+                "null".to_string()
+            }
+        } else {
+            "null".to_string()
+        }
+    }
+
+    /// Clear style history
+    #[wasm_bindgen]
+    pub fn clear_style_history(&self) {
+        if let Ok(mut history) = self.style_history.lock() {
+            history.clear();
+        }
+    }
+
+    /// Export style history as compressed base64 string
+    #[wasm_bindgen]
+    pub fn export_style_history(&self) -> String {
+        if let Ok(history) = self.style_history.lock() {
+            history.export_to_base64().unwrap_or_else(|_| String::new())
+        } else {
+            String::new()
+        }
+    }
+
+    /// Import style history from compressed base64 string
+    #[wasm_bindgen]
+    pub fn import_style_history(&self, data: &str) -> bool {
+        if let Ok(mut history) = self.style_history.lock() {
+            history.import_from_base64(data).is_ok()
+        } else {
+            false
+        }
+    }
+
+    /// Get style history count
+    #[wasm_bindgen]
+    pub fn get_style_history_count(&self) -> usize {
+        if let Ok(history) = self.style_history.lock() {
+            history.len()
+        } else {
+            0
+        }
     }
 }

@@ -50,7 +50,7 @@ export const useUndoRedoHandlers = ({
           } else {
             // Create new element with the same ID
             const wasmElement = wasmEngine.createElement(
-              element.element_type,
+              element.elementType,
               element.x,
               element.y
             );

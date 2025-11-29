@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { Element, ElementStyle } from '../module/wasm-interface';
+import { saveHistoryToStorage } from '../utils/styleHistoryStorage';
 
 interface UseWasmBuilderActionsProps {
   wasmEngine: any;
@@ -63,23 +64,8 @@ export const useWasmBuilderActions = ({
 
         const element = wasmEngine.createElement(type, centerX, centerY);
         if (element) {
-          // Apply style template if available
-          if (styleTemplate) {
-            element.style = { ...element.style, ...styleTemplate };
-
-            const success = wasmEngine.updateElementStyle(
-              element.id,
-              styleTemplate
-            );
-            if (success) {
-              // Style template applied successfully
-            } else {
-              console.warn(
-                'Failed to apply style template to WASM for element:',
-                element.id
-              );
-            }
-          }
+          // ✅ Clean creation: No auto-style, no template
+          // Element starts with default styles defined in Rust
 
           setElements(prevElements => {
             const newElements = [...prevElements, element];
@@ -95,11 +81,9 @@ export const useWasmBuilderActions = ({
           setSelectedElementId(element.id);
           setEditingElementId(null);
 
-          if (!styleTemplate) {
-            setTimeout(() => {
-              refreshElements();
-            }, 150);
-          }
+          setTimeout(() => {
+            refreshElements();
+          }, 150);
         } else {
           setError('Failed to create element');
         }
@@ -124,7 +108,7 @@ export const useWasmBuilderActions = ({
   );
 
   // Element deletion
-  const deleteElement = useCallback(
+  const handleDelete = useCallback(
     (elementId: string) => {
       try {
         setIsProcessing(true);
@@ -178,6 +162,7 @@ export const useWasmBuilderActions = ({
       pendingUpdatesRef,
       undoRedo,
       refreshElements,
+      getElementById,
     ]
   );
 
@@ -278,16 +263,15 @@ export const useWasmBuilderActions = ({
         }
 
         // Normal style update logic
-        setStyleTemplate(prevTemplate => ({
-          ...prevTemplate,
-          ...style,
-        }));
+        // ❌ REMOVED: setStyleTemplate - this was causing style leakage
+        // Every style change was polluting the global template for new elements
+        // Now styleTemplate is only set when explicitly requested (e.g., template manager)
 
         setElements(prevElements =>
           prevElements.map(el => {
             if (el.id === elementId) {
               const newStyle = { ...el.style };
-              
+
               // Handle nested updates for fill and stroke
               if (style.fill) {
                 newStyle.fill = { ...newStyle.fill, ...style.fill };
@@ -295,14 +279,14 @@ export const useWasmBuilderActions = ({
               if (style.stroke) {
                 newStyle.stroke = { ...newStyle.stroke, ...style.stroke };
               }
-              
+
               // Handle other style properties
               Object.keys(style).forEach(key => {
                 if (key !== 'fill' && key !== 'stroke' && key !== '__forceTableRefresh') {
                   (newStyle as any)[key] = (style as any)[key];
                 }
               });
-              
+
               return { ...el, style: newStyle };
             }
             return el;
@@ -326,6 +310,18 @@ export const useWasmBuilderActions = ({
             );
             setError('Failed to update element style');
             console.error('WASM style update failed for element:', elementId);
+          } else {
+            // ✅ Save to style history after successful update
+            const element = getElementById(elementId);
+            if (element) {
+              wasmEngine.saveStyleToHistory(element.style);
+              // Auto-save to localStorage
+              try {
+                saveHistoryToStorage(wasmEngine);
+              } catch (error) {
+                console.warn('Failed to save history to localStorage:', error);
+              }
+            }
           }
         }
       } catch (error) {
@@ -342,7 +338,7 @@ export const useWasmBuilderActions = ({
         }
       }
     },
-    [wasmEngine, getElementById, setElements, setStyleTemplate, setError]
+    [wasmEngine, getElementById, setElements, setError] // Removed setStyleTemplate from deps
   );
 
   // Size change handler
@@ -441,7 +437,7 @@ export const useWasmBuilderActions = ({
   const exportHtml = useCallback(() => {
     try {
       console.log('Starting HTML export...');
-      
+
       const exportResult = wasmEngine.exportHtml({
         include_responsive: true,
         minify_css: false,
@@ -456,7 +452,7 @@ export const useWasmBuilderActions = ({
         const now = new Date();
         const timestamp = now.toISOString().slice(0, 19).replace(/[:]/g, '-');
         const filename = `html-builder-export-${timestamp}.html`;
-        
+
         const htmlContent = `<!DOCTYPE html>
 <html lang="th">
 <head>
@@ -559,9 +555,9 @@ ${exportResult.html}
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
+
         console.log(`HTML exported successfully as ${filename}`);
-        
+
         // Show success notification (if available)
         if (typeof window !== 'undefined' && 'alert' in window) {
           alert(`✅ Export สำเร็จ!\n\nไฟล์: ${filename}\nจำนวนหน้า: ${exportResult.metadata.total_pages}\nจำนวน Elements: ${exportResult.metadata.total_elements}`);
@@ -608,7 +604,7 @@ ${exportResult.html}
       const firstPaper = papers && papers.length > 0 ? papers[0] : null;
       const A4_WIDTH_PX = firstPaper?.width || 794;
       const A4_HEIGHT_PX = firstPaper?.height || 1123;
-      
+
       // Calculate mm from pixels (96 DPI: 96px = 25.4mm)
       const DPI = 96;
       const A4_WIDTH_MM = (A4_WIDTH_PX * 25.4) / DPI;
@@ -818,7 +814,7 @@ ${exportResult.html}
         alert('❌ ไม่สามารถเปิดหน้าต่างสำหรับพิมพ์ได้ กรุณาอนุญาต Pop-up');
         return;
       }
-      
+
       printWindow.document.open();
       printWindow.document.write(printHtml);
       printWindow.document.close();
@@ -880,7 +876,7 @@ ${exportResult.html}
 
   return {
     createElement,
-    deleteElement,
+    deleteElement: handleDelete,
     handleContentChange,
     handleStyleChange,
     handleSizeChange,

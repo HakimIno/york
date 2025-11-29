@@ -32,7 +32,7 @@ export const useStylePanel = ({
   }, [element?.id, element?.style, localStyle]);
 
   useEffect(() => {
-    if (element && element.element_type === 'line') {
+    if (element && element.elementType === 'line') {
       try {
         const parsedData = JSON.parse(element.content || '{}');
         setLocalLineData(parsedData);
@@ -48,7 +48,7 @@ export const useStylePanel = ({
         });
       }
     }
-  }, [element?.id, element?.content, element?.element_type, element?.width]);
+  }, [element?.id, element?.content, element?.elementType, element?.width]);
 
   const styleUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -100,14 +100,14 @@ export const useStylePanel = ({
         } catch (error) {
           console.error('Error updating content:', error);
         }
-      }, element.element_type === 'line' ? 200 : 50);
+      }, element.elementType === 'line' ? 200 : 50);
     },
-    [element?.id, element?.content, element?.element_type, onContentChange]
+    [element?.id, element?.content, element?.elementType, onContentChange]
   );
 
   const handleLineDataUpdate = useCallback(
     (updates: any) => {
-      if (!element || element.element_type !== 'line') return;
+      if (!element || element.elementType !== 'line') return;
 
       setLocalLineData((prev: any) => ({ ...prev, ...updates }));
 
@@ -125,7 +125,7 @@ export const useStylePanel = ({
         }
       }, 300);
     },
-    [element?.id, element?.content, element?.element_type, localLineData, onContentChange]
+    [element?.id, element?.content, element?.elementType, localLineData, onContentChange]
   );
 
   const safeStyle = useMemo(() => {
@@ -176,7 +176,7 @@ export const useStylePanel = ({
   }, [localStyle]);
 
   const formFieldData = useMemo(() => {
-    if (!element || element.element_type !== 'form_field') return null;
+    if (!element || element.elementType !== 'form_field') return null;
     
     const contentKey = `${element.id}-${element.content || ''}`;
     
@@ -204,20 +204,20 @@ export const useStylePanel = ({
       valueWidth: parsed.valueWidth ?? 70,
       underlineStyle: parsed.underlineStyle ?? 'solid',
     };
-  }, [element?.id, element?.content, element?.element_type]);
+  }, [element?.id, element?.content, element?.elementType]);
 
   const isTableElement = useMemo(() => 
-    element?.element_type === 'table',
-    [element?.element_type]
+    element?.elementType === 'table',
+    [element?.elementType]
   );
   
   const isFormFieldElement = useMemo(() => 
-    element?.element_type === 'form_field',
-    [element?.element_type]
+    element?.elementType === 'form_field',
+    [element?.elementType]
   );
 
   const checkboxData = useMemo(() => {
-    if (!element || element.element_type !== 'checkbox') return null;
+    if (!element || element.elementType !== 'checkbox') return null;
     
     try {
       const parsed = JSON.parse(element.content || '{}');
@@ -243,11 +243,11 @@ export const useStylePanel = ({
         labelGap: 4,
       };
     }
-  }, [element?.id, element?.content, element?.element_type]);
+  }, [element?.id, element?.content, element?.elementType]);
 
   const isCheckboxElement = useMemo(() => 
-    element?.element_type === 'checkbox',
-    [element?.element_type]
+    element?.elementType === 'checkbox',
+    [element?.elementType]
   );
 
 

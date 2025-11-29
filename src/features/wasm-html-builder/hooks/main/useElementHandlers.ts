@@ -96,7 +96,7 @@ export const useElementHandlers = ({
     const pastedElement = copyPaste.pasteElement();
     if (pastedElement) {
       const wasmElement = wasmEngine.createElement(
-        pastedElement.element_type,
+        pastedElement.elementType,
         pastedElement.x,
         pastedElement.y
       );
@@ -123,7 +123,7 @@ export const useElementHandlers = ({
         undoRedo.saveState(
           [...state.elements, finalElement],
           'paste_element',
-          `Pasted ${pastedElement.element_type}`
+          `Pasted ${pastedElement.elementType}`
         );
       }
     }

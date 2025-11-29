@@ -130,6 +130,15 @@ export interface UseWasmEngineReturn {
   validateStyleUpdate: (style: Partial<ElementStyle>) => Partial<ElementStyle>;
   getElementsSummary: () => { total: number; by_type: Record<string, number> };
 
+  // Style History methods
+  saveStyleToHistory: (style: ElementStyle) => boolean;
+  getStyleHistory: (count?: number) => ElementStyle[];
+  getLastStyle: () => ElementStyle | null;
+  clearStyleHistory: () => void;
+  exportStyleHistory: () => string;
+  importStyleHistory: (data: string) => boolean;
+  getStyleHistoryCount: () => number;
+
   // Utility
   reset: () => void;
   calculateDropPosition: (
@@ -682,66 +691,66 @@ export const useWasmEngine = (
       },
       [safeCall]
     ),
-  updateTableRowHeight: useCallback(
-    (elementId: string, rowIndex: number, height: number): boolean => {
-      return (
-        safeCall(
-          () => engineRef.current!.updateTableRowHeight(elementId, rowIndex, height),
-          false
-        ) || false
-      );
-    },
-    [safeCall]
-  ),
+    updateTableRowHeight: useCallback(
+      (elementId: string, rowIndex: number, height: number): boolean => {
+        return (
+          safeCall(
+            () => engineRef.current!.updateTableRowHeight(elementId, rowIndex, height),
+            false
+          ) || false
+        );
+      },
+      [safeCall]
+    ),
 
-  // Excel-like calculation functions
-  calculateColumnSum: useCallback(
-    (elementId: string, colIndex: number): number => {
-      return (
-        safeCall(
-          () => engineRef.current!.calculateColumnSum(elementId, colIndex),
-          0
-        ) || 0
-      );
-    },
-    [safeCall]
-  ),
+    // Excel-like calculation functions
+    calculateColumnSum: useCallback(
+      (elementId: string, colIndex: number): number => {
+        return (
+          safeCall(
+            () => engineRef.current!.calculateColumnSum(elementId, colIndex),
+            0
+          ) || 0
+        );
+      },
+      [safeCall]
+    ),
 
-  calculateRowSum: useCallback(
-    (elementId: string, rowIndex: number): number => {
-      return (
-        safeCall(
-          () => engineRef.current!.calculateRowSum(elementId, rowIndex),
-          0
-        ) || 0
-      );
-    },
-    [safeCall]
-  ),
+    calculateRowSum: useCallback(
+      (elementId: string, rowIndex: number): number => {
+        return (
+          safeCall(
+            () => engineRef.current!.calculateRowSum(elementId, rowIndex),
+            0
+          ) || 0
+        );
+      },
+      [safeCall]
+    ),
 
-  calculateAverage: useCallback(
-    (elementId: string, startRow: number, startCol: number, endRow: number, endCol: number): number => {
-      return (
-        safeCall(
-          () => engineRef.current!.calculateAverage(elementId, startRow, startCol, endRow, endCol),
-          0
-        ) || 0
-      );
-    },
-    [safeCall]
-  ),
+    calculateAverage: useCallback(
+      (elementId: string, startRow: number, startCol: number, endRow: number, endCol: number): number => {
+        return (
+          safeCall(
+            () => engineRef.current!.calculateAverage(elementId, startRow, startCol, endRow, endCol),
+            0
+          ) || 0
+        );
+      },
+      [safeCall]
+    ),
 
-  autoFitColumns: useCallback(
-    (elementId: string): boolean => {
-      return (
-        safeCall(
-          () => engineRef.current!.autoFitColumns(elementId),
-          false
-        ) || false
-      );
-    },
-    [safeCall]
-  ),
+    autoFitColumns: useCallback(
+      (elementId: string): boolean => {
+        return (
+          safeCall(
+            () => engineRef.current!.autoFitColumns(elementId),
+            false
+          ) || false
+        );
+      },
+      [safeCall]
+    ),
 
     // Performance optimization methods for StylePanel
     parseFormFieldData: useCallback(
@@ -902,6 +911,51 @@ export const useWasmEngine = (
       },
       [safeCall]
     ),
+
+    // Style History methods
+    saveStyleToHistory: useCallback(
+      (style: ElementStyle): boolean => {
+        return safeCall(() => engineRef.current!.saveStyleToHistory(style), false) || false;
+      },
+      [safeCall]
+    ),
+    getStyleHistory: useCallback(
+      (count: number = 10): ElementStyle[] => {
+        return safeCall(() => engineRef.current!.getStyleHistory(count), []) || [];
+      },
+      [safeCall]
+    ),
+    getLastStyle: useCallback(
+      (): ElementStyle | null => {
+        return safeCall(() => engineRef.current!.getLastStyle());
+      },
+      [safeCall]
+    ),
+    clearStyleHistory: useCallback(
+      (): void => {
+        safeCall(() => engineRef.current!.clearStyleHistory());
+      },
+      [safeCall]
+    ),
+    exportStyleHistory: useCallback(
+      (): string => {
+        return safeCall(() => engineRef.current!.exportStyleHistory(), '') || '';
+      },
+      [safeCall]
+    ),
+    importStyleHistory: useCallback(
+      (data: string): boolean => {
+        return safeCall(() => engineRef.current!.importStyleHistory(data), false) || false;
+      },
+      [safeCall]
+    ),
+    getStyleHistoryCount: useCallback(
+      (): number => {
+        return safeCall(() => engineRef.current!.getStyleHistoryCount(), 0) || 0;
+      },
+      [safeCall]
+    ),
+
     autoOptimizeSpatialIndex: useCallback(
       (): boolean => {
         return safeCall(() => engineRef.current!.autoOptimizeSpatialIndex(), false) || false;

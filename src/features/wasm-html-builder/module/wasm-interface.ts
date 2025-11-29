@@ -36,41 +36,42 @@ export interface ElementStyle {
 }
 
 export interface TableCell {
+  id: string;
   content: string;
-  rowspan: number;
-  colspan: number;
+  rowSpan: number;
+  colSpan: number;
   style: ElementStyle;
 }
 
 export interface TableRow {
+  id: string;
   cells: TableCell[];
   height: number;
-  style: ElementStyle;
 }
 
 export interface TableData {
   rows: TableRow[];
   columns: number;
-  header_rows: number;
-  footer_rows: number;
-  column_widths: number[];
-  border_collapse: boolean;
-  table_style: ElementStyle;
+  headerRows: number;
+  footerRows: number;
+  columnWidths: number[];
+  borderCollapse: boolean;
+  tableStyle: ElementStyle;
 }
 
 export interface Element {
   id: string;
-  component_id: string;
-  element_type: string;
+  componentId: string;
+  elementType: string;
   x: number;
   y: number;
   width: number;
   height: number;
-  z_index: number;
+  zIndex: number;
   visible: boolean;
   content: string;
   style: ElementStyle;
-  table_data?: TableData; // For table elements
+  tableData?: TableData; // For table elements
 }
 
 export interface A4Paper {
@@ -181,7 +182,7 @@ export class HtmlBuilderWasm {
   private isInitializing = false;
   private initPromise: Promise<void> | null = null;
 
-  constructor() {}
+  constructor() { }
 
   // Initialize WASM module
   async initialize(): Promise<void> {
@@ -718,7 +719,7 @@ export class HtmlBuilderWasm {
 
         const distance = Math.sqrt(
           Math.pow(paperCenterX - elementCenterX, 2) +
-            Math.pow(paperCenterY - elementCenterY, 2)
+          Math.pow(paperCenterY - elementCenterY, 2)
         );
 
         if (distance < minDistance) {
@@ -748,7 +749,7 @@ export class HtmlBuilderWasm {
    */
   queryElementsInRegion(x: number, y: number, width: number, height: number): Element[] {
     if (!this.engine) return [];
-    
+
     try {
       const result = this.engine.query_elements_in_region(x, y, width, height);
       return JSON.parse(result);
@@ -763,7 +764,7 @@ export class HtmlBuilderWasm {
    */
   findElementsAtPoint(x: number, y: number): Element[] {
     if (!this.engine) return [];
-    
+
     try {
       const result = this.engine.find_elements_at_point(x, y);
       return JSON.parse(result);
@@ -778,7 +779,7 @@ export class HtmlBuilderWasm {
    */
   findNearestElement(x: number, y: number, maxDistance: number = 100): Element | null {
     if (!this.engine) return null;
-    
+
     try {
       const result = this.engine.find_nearest_element(x, y, maxDistance);
       if (result === 'null') return null;
@@ -794,7 +795,7 @@ export class HtmlBuilderWasm {
    */
   detectElementCollisions(elementId: string): Element[] {
     if (!this.engine) return [];
-    
+
     try {
       const result = this.engine.detect_element_collisions(elementId);
       return JSON.parse(result);
@@ -809,7 +810,7 @@ export class HtmlBuilderWasm {
    */
   getSpatialIndexStats(): SpatialIndexStats | null {
     if (!this.engine) return null;
-    
+
     try {
       const result = this.engine.get_spatial_index_stats();
       return JSON.parse(result);
@@ -824,7 +825,7 @@ export class HtmlBuilderWasm {
    */
   updateSpatialIndexBounds(x: number, y: number, width: number, height: number): void {
     if (!this.engine) return;
-    
+
     try {
       this.engine.update_spatial_index_bounds(x, y, width, height);
     } catch (error) {
@@ -837,7 +838,7 @@ export class HtmlBuilderWasm {
    */
   rebuildSpatialIndex(cellSize: number = 100): void {
     if (!this.engine) return;
-    
+
     try {
       this.engine.rebuild_spatial_index(cellSize);
     } catch (error) {
@@ -850,12 +851,114 @@ export class HtmlBuilderWasm {
    */
   autoOptimizeSpatialIndex(): boolean {
     if (!this.engine) return false;
-    
+
     try {
       return this.engine.auto_optimize_spatial_index();
     } catch (error) {
       console.error('Error auto-optimizing spatial index:', error);
       return false;
+    }
+  }
+
+  // Style History methods
+  /**
+   * Save a style to history
+   */
+  saveStyleToHistory(style: ElementStyle): boolean {
+    if (!this.engine) return false;
+
+    try {
+      const styleJson = JSON.stringify(style);
+      return this.engine.save_style_to_history(styleJson);
+    } catch (error) {
+      console.error('Error saving style to history:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get recent styles from history
+   */
+  getStyleHistory(count: number = 10): ElementStyle[] {
+    if (!this.engine) return [];
+
+    try {
+      const result = this.engine.get_style_history(count);
+      return JSON.parse(result) as ElementStyle[];
+    } catch (error) {
+      console.error('Error getting style history:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get the last style from history
+   */
+  getLastStyle(): ElementStyle | null {
+    if (!this.engine) return null;
+
+    try {
+      const result = this.engine.get_last_style();
+      if (result === 'null') return null;
+      return JSON.parse(result) as ElementStyle;
+    } catch (error) {
+      console.error('Error getting last style:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Clear all style history
+   */
+  clearStyleHistory(): void {
+    if (!this.engine) return;
+
+    try {
+      this.engine.clear_style_history();
+    } catch (error) {
+      console.error('Error clearing style history:', error);
+    }
+  }
+
+  /**
+   * Export style history as compressed base64 string
+   */
+  exportStyleHistory(): string {
+    if (!this.engine) return '';
+
+    try {
+      return this.engine.export_style_history();
+    } catch (error) {
+      console.error('Error exporting style history:', error);
+      return '';
+    }
+  }
+
+  /**
+   * Import style history from compressed base64 string
+   */
+  importStyleHistory(data: string): boolean {
+    if (!this.engine) return false;
+
+    try {
+      return this.engine.import_style_history(data);
+    } catch (error) {
+      console.error('Error importing style history:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get style history count
+   */
+  getStyleHistoryCount(): number {
+    if (!this.engine) return 0;
+
+    try {
+      return this.engine.get_style_history_count();
+    } catch (error) {
+      console.error('Error getting style history count:', error);
+      return 0;
     }
   }
 

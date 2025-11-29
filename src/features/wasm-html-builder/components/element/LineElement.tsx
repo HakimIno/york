@@ -103,7 +103,7 @@ const LineElement: React.FC<LineElementProps> = ({
     top: element.y,
     width: element.width,
     height: element.height,
-    zIndex: element.z_index,
+    zIndex: element.zIndex,
     cursor: getCursor(),
     userSelect: isEditing ? 'text' : 'none',
     overflow: 'visible',
@@ -355,7 +355,7 @@ const DragHandle: React.FC<{
             top: handle.y - 4,
             width: HANDLE_SIZE + HANDLE_GLOW_SIZE,
             height: HANDLE_SIZE + HANDLE_GLOW_SIZE,
-            zIndex: element.z_index + 999,
+            zIndex: element.zIndex + 999,
           }}
         />
       )}
@@ -368,7 +368,7 @@ const DragHandle: React.FC<{
           top: handle.y,
           width: HANDLE_SIZE,
           height: HANDLE_SIZE,
-          zIndex: element.z_index + 1000,
+          zIndex: element.zIndex + 1000,
           transition: isDragging ? 'none' : 'all 0.2s ease',
           pointerEvents: 'auto',
           transform: isDragging ? 'scale(1.25)' : 'scale(1)',
@@ -385,7 +385,7 @@ const DragHandle: React.FC<{
           style={{
             left: handle.x + HANDLE_SIZE + 2,
             top: handle.y - 2,
-            zIndex: element.z_index + 1001,
+            zIndex: element.zIndex + 1001,
           }}
         >
           →
@@ -422,7 +422,7 @@ const MeasurementDisplay: React.FC<{
       style={{
         left:  0,
         top: Math.min(dragHandles[0].y, dragHandles[1].y) - MEASUREMENT_OFFSET,
-        zIndex: element.z_index + 1001,
+        zIndex: element.zIndex + 1001,
         fontSize: '11px',
         whiteSpace: 'nowrap',
       }}
@@ -460,7 +460,7 @@ const GridIndicators: React.FC<{
       style={{
         left: Math.round(lineData.startX / 10) * 10 - GRID_INDICATOR_SIZE,
         top: Math.round(lineData.startY / 10) * 10 - GRID_INDICATOR_SIZE,
-        zIndex: element.z_index + 999,
+        zIndex: element.zIndex + 999,
         opacity: 0.7,
       }}
     />
@@ -470,7 +470,7 @@ const GridIndicators: React.FC<{
       style={{
         left: Math.round(lineData.endX / 10) * 10 - GRID_INDICATOR_SIZE,
         top: Math.round(lineData.endY / 10) * 10 - GRID_INDICATOR_SIZE,
-        zIndex: element.z_index + 999,
+        zIndex: element.zIndex + 999,
         opacity: 0.7,
       }}
     />
@@ -484,7 +484,7 @@ const GridIndicators: React.FC<{
           top: -element.height,
           width: element.width * 3,
           height: element.height * 3,
-          zIndex: element.z_index + 998,
+          zIndex: element.zIndex + 998,
         }}
       >
         <defs>

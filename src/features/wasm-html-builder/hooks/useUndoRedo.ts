@@ -84,13 +84,13 @@ export const useUndoRedo = (): UndoRedoHook => {
         action,
         elements: elements.map(el => ({
           id: el.id,
-          element_type: el.element_type,
-          component_id: el.component_id,
+          element_type: el.elementType,
+          component_id: el.componentId,
           x: el.x,
           y: el.y,
           width: el.width,
           height: el.height,
-          z_index: el.z_index,
+          z_index: el.zIndex,
           visible: el.visible,
           content: el.content,
           style: { ...el.style }, // Deep copy style

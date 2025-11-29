@@ -143,7 +143,7 @@ const CheckboxElement: React.FC<CheckboxElementProps> = ({
             top: element.y,
             width: element.width,
             height: element.height,
-            zIndex: element.z_index,
+            zIndex: element.zIndex,
             fontSize: element.style.fontSize,
             fontFamily: element.style.fontFamily,
             fontWeight: element.style.fontWeight,
@@ -207,7 +207,7 @@ const CheckboxElement: React.FC<CheckboxElementProps> = ({
                     style={{
                         left: element.x + element.width + 6,
                         top: element.y,
-                        zIndex: element.z_index + 1001,
+                        zIndex: element.zIndex + 1001,
                         transition: 'none',
                     }}
                 >
@@ -343,7 +343,7 @@ const CheckboxElement: React.FC<CheckboxElementProps> = ({
                                     width: HANDLE_SIZE,
                                     height: HANDLE_SIZE,
                                     cursor: handle.cursor,
-                                    zIndex: element.z_index + 1000,
+                                    zIndex: element.zIndex + 1000,
                                     pointerEvents: 'auto',
                                 }}
                                 onMouseDown={(e) => handleResizeStart(e, handle.direction)}

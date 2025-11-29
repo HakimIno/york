@@ -23,6 +23,7 @@ interface ResizableElementProps {
     isDragging?: boolean;
     isLocked?: boolean;
     showBorders?: boolean;
+    paperOffset?: { x: number; y: number }; // Offset for coordinate conversion
     onPositionChange: (elementId: string, x: number, y: number) => void;
     onSizeChange: (elementId: string, width: number, height: number) => void;
     onContentChange: (elementId: string, content: string) => void;
@@ -53,6 +54,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     isDragging = false,
     isLocked = false,
     showBorders = true,
+    paperOffset = { x: 0, y: 0 },
     onPositionChange,
     onSizeChange,
     onContentChange,
@@ -104,7 +106,13 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
         elementX: element.x,
         elementY: element.y,
         onSizeChange,
-        onPositionChange,
+        onPositionChange: useCallback(
+            (id: string, x: number, y: number) => {
+                // Add paperOffset to convert local coordinates to global
+                onPositionChange(id, x + paperOffset.x, y + paperOffset.y);
+            },
+            [onPositionChange, paperOffset.x, paperOffset.y]
+        ),
     });
 
     // Optimized event handlers
@@ -413,9 +421,83 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
         [isSelected, isEditing, isLocked]
     );
 
-    // Element styles - เรียบง่าย ตรงไปตรงมา
-    const elementStyles = useMemo((): React.CSSProperties => {
-        const isButton = element.element_type === 'button';
+    // ✅ OPTIMIZED: Split style calculations into granular sub-objects
+    // Base position and size - only recalculates when position/size changes
+    const basePositionStyles = useMemo((): React.CSSProperties => ({
+        position: 'absolute',
+        left: element.x,
+        top: element.y,
+        width: element.width,
+        height: element.height,
+        zIndex: element.zIndex,
+    }), [element.x, element.y, element.width, element.height, element.zIndex]);
+
+    // Text and font styles - only recalculates when text properties change
+    const textStyles = useMemo((): React.CSSProperties => ({
+        fontSize: element.style.fontSize,
+        fontFamily: element.style.fontFamily,
+        fontWeight: element.style.fontWeight as any,
+        fontStyle: element.style.fontStyle as any,
+        color: element.style.color,
+        textAlign: element.style.textAlign as any,
+    }), [
+        element.style.fontSize,
+        element.style.fontFamily,
+        element.style.fontWeight,
+        element.style.fontStyle,
+        element.style.color,
+        element.style.textAlign,
+    ]);
+
+    // Border and background styles - only recalculates when these properties change
+    const borderAndBackgroundStyles = useMemo((): React.CSSProperties => ({
+        backgroundColor: element.style.backgroundColor,
+        padding: element.style.padding,
+        borderRadius: element.style.borderRadius,
+        borderWidth: element.style.borderWidth,
+        borderColor: element.style.borderColor,
+    }), [
+        element.style.backgroundColor,
+        element.style.padding,
+        element.style.borderRadius,
+        element.style.borderWidth,
+        element.style.borderColor,
+    ]);
+
+    // Selection and border visibility styles - recalculates only when selection state changes
+    const selectionStyles = useMemo((): React.CSSProperties => {
+        if (isSelected) {
+            return {
+                boxShadow: isResizing
+                    ? '0 0 0 2px #ef4444, 0 4px 12px rgba(239, 68, 68, 0.25)'
+                    : isLocked
+                        ? '0 0 0 2px #f59e0b, 0 4px 12px rgba(245, 158, 11, 0.2)'
+                        : '0 0 0 2px #3b82f6, 0 4px 12px rgba(59, 130, 246, 0.2)',
+                borderColor: isLocked ? '#f59e0b' : '#3b82f6',
+                borderStyle: 'solid',
+            };
+        }
+
+        // Show borders only if showBorders is true
+        if (showBorders) {
+            return {
+                borderStyle: 'dashed',
+                borderColor: isLocked ? '#f59e0b' : '#d1d5db',
+                borderWidth: '1px',
+                boxShadow: 'none',
+            };
+        }
+
+        return {
+            borderStyle: 'none',
+            borderWidth: '0px',
+            boxShadow: 'none',
+        };
+    }, [isSelected, isResizing, isLocked, showBorders]);
+
+    // Layout styles - recalculates when element type or interaction state changes
+    const layoutStyles = useMemo((): React.CSSProperties => {
+        const isButton = element.elementType === 'button';
         const textAlignJustify =
             element.style.textAlign === 'center'
                 ? 'center'
@@ -423,25 +505,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
                     ? 'flex-end'
                     : 'flex-start';
 
-        const baseStyles: React.CSSProperties = {
-            position: 'absolute',
-            left: element.x,
-            top: element.y,
-            width: element.width,
-            height: element.height,
-            zIndex: element.z_index,
-            fontSize: element.style.fontSize,
-            fontFamily: element.style.fontFamily,
-            fontWeight: element.style.fontWeight as any,
-            fontStyle: element.style.fontStyle as any,
-            color: element.style.color,
-            backgroundColor: element.style.backgroundColor,
-            textAlign: element.style.textAlign as any,
-            padding: element.style.padding,
-            borderRadius: element.style.borderRadius,
-            borderWidth: element.style.borderWidth,
-            borderStyle: 'solid',
-            borderColor: element.style.borderColor,
+        return {
             cursor: isEditing
                 ? 'text'
                 : isLocked
@@ -456,41 +520,19 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
             justifyContent: textAlignJustify,
             transition: 'none',
         };
+    }, [element.elementType, element.style.textAlign, isEditing, isLocked, isDragging]);
 
-        // Apply selection styles and border visibility
-        if (isSelected) {
-            baseStyles.boxShadow = isResizing
-                ? '0 0 0 2px #ef4444, 0 4px 12px rgba(239, 68, 68, 0.25)'
-                : isLocked
-                    ? '0 0 0 2px #f59e0b, 0 4px 12px rgba(245, 158, 11, 0.2)'
-                    : '0 0 0 2px #3b82f6, 0 4px 12px rgba(59, 130, 246, 0.2)';
-            baseStyles.borderColor = isLocked ? '#f59e0b' : '#3b82f6';
-            baseStyles.borderStyle = 'solid';
-        } else {
-            // Show borders only if showBorders is true
-            if (showBorders) {
-                baseStyles.borderStyle = 'dashed';
-                baseStyles.borderColor = isLocked ? '#f59e0b' : '#d1d5db';
-                baseStyles.borderWidth = '1px';
-            } else {
-                baseStyles.borderStyle = 'none';
-                baseStyles.borderWidth = '0px';
-            }
-            baseStyles.boxShadow = 'none';
-        }
+    // ✅ Combine all style sub-objects - only recalculates when any sub-object changes
+    const elementStyles = useMemo((): React.CSSProperties => ({
+        ...basePositionStyles,
+        ...textStyles,
+        ...borderAndBackgroundStyles,
+        ...selectionStyles,
+        ...layoutStyles,
+    }), [basePositionStyles, textStyles, borderAndBackgroundStyles, selectionStyles, layoutStyles]);
 
-        return baseStyles;
-    }, [
-        element,
-        isEditing,
-        isDragging,
-        isResizing,
-        isSelected,
-        isLocked,
-        showBorders,
-    ]);
 
-    // Memoized content styles for textarea
+    // ✅ OPTIMIZED: Memoized content styles for textarea - granular dependencies
     const textareaStyles = useMemo(
         (): React.CSSProperties => ({
             fontSize: element.style.fontSize,
@@ -500,87 +542,121 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
             color: element.style.color,
             textAlign: element.style.textAlign as any,
         }),
-        [element.style]
+        [
+            element.style.fontSize,
+            element.style.fontFamily,
+            element.style.fontWeight,
+            element.style.fontStyle,
+            element.style.color,
+            element.style.textAlign,
+        ]
     );
 
-    // Shape-specific styles
-    const getShapeStyles = useCallback((): React.CSSProperties => {
-        const baseStyles: React.CSSProperties = {
-            position: 'absolute',
-            left: element.x,
-            top: element.y,
-            width: element.width,
-            height: element.height,
-            zIndex: element.z_index,
-            cursor: isEditing
-                ? 'text'
-                : isLocked
-                    ? 'not-allowed'
-                    : isDragging
-                        ? 'grabbing'
-                        : 'grab',
-            userSelect: isEditing ? 'text' : 'none',
-            overflow: 'visible', // Changed to visible for triangle
-            transition: 'none',
-        };
+    // ✅ OPTIMIZED: Shape-specific styles split into granular sub-objects
+    // Shape base position and layout - only recalculates when position/size/interaction changes
+    const shapeBaseStyles = useMemo((): React.CSSProperties => ({
+        position: 'absolute',
+        left: element.x,
+        top: element.y,
+        width: element.width,
+        height: element.height,
+        zIndex: element.zIndex,
+        cursor: isEditing
+            ? 'text'
+            : isLocked
+                ? 'not-allowed'
+                : isDragging
+                    ? 'grabbing'
+                    : 'grab',
+        userSelect: isEditing ? 'text' : 'none',
+        overflow: 'visible', // Changed to visible for triangle
+        transition: 'none',
+    }), [element.x, element.y, element.width, element.height, element.zIndex, isEditing, isLocked, isDragging]);
 
-        // Apply Fill styles
+    // Shape fill styles - only recalculates when fill properties change
+    const shapeFillStyles = useMemo((): React.CSSProperties => {
         if (element.style.fill?.enabled) {
-            baseStyles.backgroundColor = element.style.fill.color;
+            const styles: React.CSSProperties = {
+                backgroundColor: element.style.fill.color,
+            };
             if (element.style.fill.opacity < 1.0) {
-                baseStyles.opacity = element.style.fill.opacity;
+                styles.opacity = element.style.fill.opacity;
             }
-        } else {
-            baseStyles.backgroundColor = 'transparent';
+            return styles;
         }
+        return {
+            backgroundColor: 'transparent',
+        };
+    }, [element.style.fill?.enabled, element.style.fill?.color, element.style.fill?.opacity]);
 
-        // Apply Stroke styles
+    // Shape stroke styles - only recalculates when stroke properties change
+    const shapeStrokeStyles = useMemo((): React.CSSProperties => {
         if (element.style.stroke?.enabled) {
-            baseStyles.border = `${element.style.stroke.width}px ${element.style.stroke.style} ${element.style.stroke.color}`;
+            const styles: React.CSSProperties = {
+                border: `${element.style.stroke.width}px ${element.style.stroke.style} ${element.style.stroke.color}`,
+            };
             if (element.style.stroke.opacity < 1.0) {
-                // For stroke opacity, we need to use a different approach
-                baseStyles.borderColor = element.style.stroke.color;
+                styles.borderColor = element.style.stroke.color;
             }
-        } else {
-            baseStyles.border = 'none';
+            return styles;
         }
-
-        // Shape-specific styling
-        switch (element.element_type) {
-            case 'rectangle':
-                baseStyles.borderRadius = element.style.borderRadius;
-                break;
-            case 'circle':
-                baseStyles.borderRadius = '50%';
-                break;
-            case 'line':
-                // Line elements have special styling
-                baseStyles.backgroundColor = 'transparent';
-                baseStyles.border = 'none';
-                baseStyles.borderRadius = '0';
-                break;
-        }
-
-        // Apply selection styles
-        if (isSelected) {
-            baseStyles.boxShadow = isResizing
-                ? '0 0 0 2px #ef4444, 0 4px 12px rgba(239, 68, 68, 0.25)'
-                : isLocked
-                    ? '0 0 0 2px #f59e0b, 0 4px 12px rgba(245, 158, 11, 0.2)'
-                    : '0 0 0 2px #3b82f6, 0 4px 12px rgba(59, 130, 246, 0.2)';
-        } else {
-            baseStyles.boxShadow = 'none';
-        }
-
-        return baseStyles;
+        return {
+            border: 'none',
+        };
     }, [
-        element,
-        isEditing,
-        isDragging,
-        isResizing,
-        isSelected,
-        isLocked,
+        element.style.stroke?.enabled,
+        element.style.stroke?.width,
+        element.style.stroke?.style,
+        element.style.stroke?.color,
+        element.style.stroke?.opacity,
     ]);
+
+    // Shape-specific styling (rectangle, circle, line) - only recalculates when element type changes
+    const shapeTypeStyles = useMemo((): React.CSSProperties => {
+        switch (element.elementType) {
+            case 'rectangle':
+                return {
+                    borderRadius: element.style.borderRadius,
+                };
+            case 'circle':
+                return {
+                    borderRadius: '50%',
+                };
+            case 'line':
+                return {
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderRadius: '0',
+                };
+            default:
+                return {};
+        }
+    }, [element.elementType, element.style.borderRadius]);
+
+    // Shape selection styles - only recalculates when selection state changes
+    const shapeSelectionStyles = useMemo((): React.CSSProperties => {
+        if (isSelected) {
+            return {
+                boxShadow: isResizing
+                    ? '0 0 0 2px #ef4444, 0 4px 12px rgba(239, 68, 68, 0.25)'
+                    : isLocked
+                        ? '0 0 0 2px #f59e0b, 0 4px 12px rgba(245, 158, 11, 0.2)'
+                        : '0 0 0 2px #3b82f6, 0 4px 12px rgba(59, 130, 246, 0.2)',
+            };
+        }
+        return {
+            boxShadow: 'none',
+        };
+    }, [isSelected, isResizing, isLocked]);
+
+    // ✅ Combine all shape style sub-objects
+    const getShapeStyles = useCallback((): React.CSSProperties => ({
+        ...shapeBaseStyles,
+        ...shapeFillStyles,
+        ...shapeStrokeStyles,
+        ...shapeTypeStyles,
+        ...shapeSelectionStyles,
+    }), [shapeBaseStyles, shapeFillStyles, shapeStrokeStyles, shapeTypeStyles, shapeSelectionStyles]);
 
     // Resize handles - เรียบง่าย ไม่ซับซ้อน
     const resizeHandles = useMemo(() => {
@@ -607,7 +683,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
                         width: HANDLE_SIZE,
                         height: HANDLE_SIZE,
                         cursor: cursor,
-                        zIndex: element.z_index + 1000,
+                        zIndex: element.zIndex + 1000,
                         // เรียบง่าย ไม่ซับซ้อน
                         transition: 'none',
                         pointerEvents: 'auto',
@@ -629,7 +705,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     ]);
 
     // If this is a table element, use the TableElement component
-    if (element.element_type === 'table') {
+    if (element.elementType === 'table') {
         return (
             <TableElement
                 element={element}
@@ -663,7 +739,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     }
 
     // If this is a form field element, use the FormFieldElement component
-    if (element.element_type === 'form_field') {
+    if (element.elementType === 'form_field') {
         return (
             <FormFieldElement
                 element={element}
@@ -688,7 +764,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     }
 
     // If this is a checkbox element, use the CheckboxElement component
-    if (element.element_type === 'checkbox') {
+    if (element.elementType === 'checkbox') {
         return (
             <CheckboxElement
                 element={element}
@@ -713,7 +789,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     }
 
     // If this is a shape element, render it with shape-specific styling
-    if (element.element_type === 'rectangle' || element.element_type === 'circle' || element.element_type === 'line') {
+    if (element.elementType === 'rectangle' || element.elementType === 'circle' || element.elementType === 'line') {
         return (
             <>
                 {/* Control buttons - อยู่นอก element หลัก */}
@@ -723,7 +799,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
                         style={{
                             left: element.x + element.width + 6,
                             top: element.y,
-                            zIndex: element.z_index + 1001,
+                            zIndex: element.zIndex + 1001,
                             transition: 'none',
                         }}
                     >
@@ -757,7 +833,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
                 )}
 
                 {/* Shape element */}
-                {element.element_type === 'line' ? (
+                {element.elementType === 'line' ? (
                     <LineElement
                         element={element}
                         isSelected={isSelected}
@@ -826,7 +902,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
                 )}
 
                 {/* Resize handles */}
-                {element.element_type === 'line' ? null : resizeHandles}
+                {element.elementType === 'line' ? null : resizeHandles}
             </>
         );
     }
@@ -840,7 +916,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
                     style={{
                         left: element.x + element.width + 6,
                         top: element.y,
-                        zIndex: element.z_index + 1001,
+                        zIndex: (element.zIndex || 0) + 1001,
                         transition: 'none', // ปิด transition เพื่อให้เร็วขึ้น
                     }}
                 >
@@ -1061,7 +1137,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
                         onClick={handleContentClick}
                         style={{
                             alignItems:
-                                element.element_type === 'button' ? 'center' : 'flex-start',
+                                element.elementType === 'button' ? 'center' : 'flex-start',
                             justifyContent:
                                 element.style.textAlign === 'center'
                                     ? 'center'
@@ -1129,6 +1205,14 @@ const arePropsEqual = (
         return false;
     }
 
+    // Compare paperOffset
+    if (
+        prevProps.paperOffset?.x !== nextProps.paperOffset?.x ||
+        prevProps.paperOffset?.y !== nextProps.paperOffset?.y
+    ) {
+        return false;
+    }
+
     // Deep comparison of element properties that affect rendering
     const prevEl = prevProps.element;
     const nextEl = nextProps.element;
@@ -1144,7 +1228,7 @@ const arePropsEqual = (
         prevEl.y !== nextEl.y ||
         prevEl.width !== nextEl.width ||
         prevEl.height !== nextEl.height ||
-        prevEl.z_index !== nextEl.z_index
+        prevEl.zIndex !== nextEl.zIndex
     ) {
         return false;
     }
@@ -1155,7 +1239,7 @@ const arePropsEqual = (
     }
 
     // Compare element type
-    if (prevEl.element_type !== nextEl.element_type) {
+    if (prevEl.elementType !== nextEl.elementType) {
         return false;
     }
 
@@ -1209,10 +1293,10 @@ const arePropsEqual = (
     }
 
     // Compare table data if it's a table element
-    if (prevEl.element_type === 'table' && nextEl.element_type === 'table') {
+    if (prevEl.elementType === 'table' && nextEl.elementType === 'table') {
         // For tables, we need to compare the table data structure
-        const prevTableData = prevEl.table_data;
-        const nextTableData = nextEl.table_data;
+        const prevTableData = prevEl.tableData;
+        const nextTableData = nextEl.tableData;
 
         if (!prevTableData || !nextTableData) {
             return prevTableData === nextTableData;
@@ -1221,8 +1305,8 @@ const arePropsEqual = (
         // Compare basic table properties
         if (
             prevTableData.columns !== nextTableData.columns ||
-            prevTableData.header_rows !== nextTableData.header_rows ||
-            prevTableData.footer_rows !== nextTableData.footer_rows
+            prevTableData.headerRows !== nextTableData.headerRows ||
+            prevTableData.footerRows !== nextTableData.footerRows
         ) {
             return false;
         }
@@ -1234,7 +1318,7 @@ const arePropsEqual = (
         }
 
         // Compare column widths array reference
-        if (prevTableData.column_widths !== nextTableData.column_widths) {
+        if (prevTableData.columnWidths !== nextTableData.columnWidths) {
             return false;
         }
     }

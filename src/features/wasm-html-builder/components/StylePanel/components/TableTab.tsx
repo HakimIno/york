@@ -44,9 +44,9 @@ const TableTab: React.FC<TableTabProps> = ({
   const [styleUpdateTimer, setStyleUpdateTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (element && element.table_data) {
-      const heights = element.table_data.rows?.map((row: any) => row.height || 20) || [];
-      const widths = element.table_data.column_widths || [];
+    if (element && element.tableData) {
+      const heights = element.tableData.rows?.map((row: any) => row.height || 20) || [];
+      const widths = element.tableData.columnWidths || [];
       
       setRowHeights(heights);
       setColumnWidths(widths);

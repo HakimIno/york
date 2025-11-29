@@ -45,7 +45,7 @@ const TableActionButtons: React.FC<TableActionButtonsProps> = ({
       style={{
         left: element.x + element.width + 8,
         top: element.y,
-        zIndex: element.z_index + 1001,
+        zIndex: element.zIndex + 1001,
         pointerEvents: 'auto',
       }}
       onClick={(e) => e.stopPropagation()}

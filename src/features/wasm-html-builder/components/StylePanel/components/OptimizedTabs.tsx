@@ -56,7 +56,7 @@ export const OptimizedTabs: React.FC<OptimizedTabsProps> = React.memo(({
 }) => {
   // Check if element is a shape
   const isShapeElement = useMemo(() => {
-    return element && ['rectangle', 'circle', 'line'].includes(element.element_type);
+    return element && ['rectangle', 'circle', 'line'].includes(element.elementType);
   }, [element]);
 
   // Set default tab based on element type
@@ -65,11 +65,11 @@ export const OptimizedTabs: React.FC<OptimizedTabsProps> = React.memo(({
     if (isFormFieldElement) return 'form_field';
     if (isCheckboxElement) return 'checkbox';
     if (isShapeElement) return 'fill_stroke';
-    if (element && ['text', 'heading', 'paragraph', 'span', 'div'].includes(element.element_type)) {
+    if (element && ['text', 'heading', 'paragraph', 'span', 'div'].includes(element.elementType)) {
       return 'typography';
     }
     return 'colors'; // Default to colors for most elements
-  }, [isTableElement, isFormFieldElement, isCheckboxElement, isShapeElement, element?.element_type]);
+  }, [isTableElement, isFormFieldElement, isCheckboxElement, isShapeElement, element?.elementType]);
 
   const [activeTab, setActiveTab] = useState(getDefaultTab);
 
@@ -77,7 +77,7 @@ export const OptimizedTabs: React.FC<OptimizedTabsProps> = React.memo(({
   useEffect(() => {
     const newDefaultTab = getDefaultTab();
     setActiveTab(newDefaultTab);
-  }, [element?.id, element?.element_type, getDefaultTab]);
+  }, [element?.id, element?.elementType, getDefaultTab]);
 
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value);
@@ -88,17 +88,17 @@ export const OptimizedTabs: React.FC<OptimizedTabsProps> = React.memo(({
     const tabs = [];
 
     // Show Typography tab only for text elements
-    if (element && ['text', 'heading', 'paragraph', 'span', 'div'].includes(element.element_type)) {
+    if (element && ['text', 'heading', 'paragraph', 'span', 'div'].includes(element.elementType)) {
       tabs.push({ value: 'typography', label: 'Text', icon: Type });
     }
 
     // Show Colors tab for non-shape elements (shapes use Fill & Stroke instead)
-    if (element && !['rectangle', 'circle', 'line'].includes(element.element_type)) {
+    if (element && !['rectangle', 'circle', 'line'].includes(element.elementType)) {
       tabs.push({ value: 'colors', label: 'Colors', icon: Palette });
     }
 
     // Show Layout tab for most elements (except pure shapes)
-    if (element && !['rectangle', 'circle', 'line'].includes(element.element_type)) {
+    if (element && !['rectangle', 'circle', 'line'].includes(element.elementType)) {
       tabs.push({ value: 'layout', label: 'Layout', icon: Layout });
     }
 
@@ -196,9 +196,9 @@ export const OptimizedTabs: React.FC<OptimizedTabsProps> = React.memo(({
                 style: (localStyle.stroke?.style as 'solid' | 'dashed' | 'dotted') || 'solid',
                 enabled: localStyle.stroke?.enabled !== false,
               }}
-              elementType={element.element_type}
-              lineData={element.element_type === 'line' ? localLineData : undefined}
-              onLineDataChange={element.element_type === 'line' ? onLineDataUpdate : undefined}
+              elementType={element.elementType}
+              lineData={element.elementType === 'line' ? localLineData : undefined}
+              onLineDataChange={element.elementType === 'line' ? onLineDataUpdate : undefined}
               onFillChange={(updates) => {
                 const currentFill = localStyle.fill || { color: '#ffffff', opacity: 1.0, enabled: true };
                 onStyleUpdate({

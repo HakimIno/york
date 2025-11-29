@@ -71,10 +71,10 @@ export const useTableResize = ({
       e.stopPropagation();
       e.preventDefault();
 
-      if (!tableData || colIndex >= tableData.column_widths.length) return;
+      if (!tableData || colIndex >= tableData.columnWidths.length) return;
 
       const startX = e.clientX;
-      const initialWidth = tableData.column_widths[colIndex] || 64;
+      const initialWidth = tableData.columnWidths[colIndex] || 64;
       const minWidth = 64;
       
 
@@ -83,10 +83,10 @@ export const useTableResize = ({
         const newWidth = Math.max(initialWidth + deltaX, minWidth);
         
 
-        if (tableData && tableData.column_widths[colIndex] !== undefined) {
-          tableData.column_widths[colIndex] = newWidth;
+        if (tableData && tableData.columnWidths[colIndex] !== undefined) {
+          tableData.columnWidths[colIndex] = newWidth;
 
-          const totalWidth = tableData.column_widths.reduce((sum, w) => sum + Math.max(w, minWidth), 0) + 32;
+          const totalWidth = tableData.columnWidths.reduce((sum, w) => sum + Math.max(w, minWidth), 0) + 32;
 
           if (Math.abs(totalWidth - element.width) > 1) {
             onSizeChange(element.id, totalWidth, element.height);
@@ -95,8 +95,8 @@ export const useTableResize = ({
       };
 
       const handleMouseUp = () => {
-        if (tableData && tableData.column_widths[colIndex] !== undefined) {
-          onUpdateColumnWidth(element.id, colIndex, tableData.column_widths[colIndex]);
+        if (tableData && tableData.columnWidths[colIndex] !== undefined) {
+          onUpdateColumnWidth(element.id, colIndex, tableData.columnWidths[colIndex]);
         }
         
         

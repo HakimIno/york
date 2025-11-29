@@ -3,19 +3,22 @@ use wasm_bindgen::prelude::*;
 
 /// Table cell structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TableCell {
+    pub id: String,
     pub content: String,
-    pub rowspan: u32,
-    pub colspan: u32,
+    pub row_span: usize,
+    pub col_span: usize,
     pub style: ElementStyle,
 }
 
 impl Default for TableCell {
     fn default() -> Self {
         TableCell {
-            content: "Cell".to_string(),
-            rowspan: 1,
-            colspan: 1,
+            id: String::new(),
+            content: String::new(),
+            row_span: 1,
+            col_span: 1,
             style: ElementStyle::default(),
         }
     }
@@ -23,29 +26,31 @@ impl Default for TableCell {
 
 /// Table row structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TableRow {
+    pub id: String,
     pub cells: Vec<TableCell>,
     pub height: f64,
-    pub style: ElementStyle,
 }
 
 impl Default for TableRow {
     fn default() -> Self {
         TableRow {
+            id: String::new(),
             cells: Vec::new(),
-            height: 40.0,
-            style: ElementStyle::default(),
+            height: 30.0,
         }
     }
 }
 
 /// Table structure for complex tables
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TableData {
     pub rows: Vec<TableRow>,
-    pub columns: u32,
-    pub header_rows: u32,
-    pub footer_rows: u32,
+    pub columns: usize,
+    pub header_rows: usize,
+    pub footer_rows: usize,
     pub column_widths: Vec<f64>,
     pub border_collapse: bool,
     pub table_style: ElementStyle,
@@ -58,7 +63,7 @@ impl Default for TableData {
             columns: 3,
             header_rows: 1,
             footer_rows: 0,
-            column_widths: vec![150.0, 150.0, 150.0],
+            column_widths: vec![150.0; 3],
             border_collapse: true,
             table_style: ElementStyle::default(),
         }
@@ -67,6 +72,7 @@ impl Default for TableData {
 
 /// Fill style for shapes
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FillStyle {
     pub color: String,
     pub opacity: f64, // 0.0 to 1.0
@@ -76,7 +82,7 @@ pub struct FillStyle {
 impl Default for FillStyle {
     fn default() -> Self {
         FillStyle {
-            color: "#ffffff".to_string(),
+            color: "#e0e0e0".to_string(),
             opacity: 1.0,
             enabled: true,
         }
@@ -85,11 +91,12 @@ impl Default for FillStyle {
 
 /// Stroke style for shapes
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StrokeStyle {
     pub color: String,
     pub opacity: f64, // 0.0 to 1.0
     pub width: f64,
-    pub position: String, // "inside", "outside", "center"
+    pub position: String, // "center", "inside", "outside"
     pub style: String,    // "solid", "dashed", "dotted"
     pub enabled: bool,
 }
@@ -100,7 +107,7 @@ impl Default for StrokeStyle {
             color: "#000000".to_string(),
             opacity: 1.0,
             width: 1.0,
-            position: "inside".to_string(),
+            position: "center".to_string(),
             style: "solid".to_string(),
             enabled: true,
         }
@@ -109,6 +116,7 @@ impl Default for StrokeStyle {
 
 /// Element style structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ElementStyle {
     pub font_size: f64,
     pub font_family: String,
@@ -148,6 +156,7 @@ impl Default for ElementStyle {
 
 /// Core element structure for WASM
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Element {
     pub id: String,
     pub component_id: String,
@@ -364,7 +373,7 @@ impl Element {
     pub fn create_default_table(&mut self, rows: u32, cols: u32) {
         if self.element_type == "table" {
             let mut table_data = TableData {
-                columns: cols,
+                columns: cols as usize,
                 header_rows: 1,
                 footer_rows: 0,
                 column_widths: vec![150.0; cols as usize],
@@ -531,8 +540,8 @@ impl Element {
                start_col < table_data.rows[start_row].cells.len() &&
                end_col < table_data.rows[end_row].cells.len() {
                 
-                let rowspan = end_row - start_row + 1;
-                let colspan = end_col - start_col + 1;
+                let row_span = end_row - start_row + 1;
+                let col_span = end_col - start_col + 1;
                 
                 // Collect content from all cells to merge
                 let mut merged_content = String::new();
@@ -548,9 +557,9 @@ impl Element {
                     }
                 }
                 
-                // Update the first cell with rowspan, colspan, and merged content
-                table_data.rows[start_row].cells[start_col].rowspan = rowspan as u32;
-                table_data.rows[start_row].cells[start_col].colspan = colspan as u32;
+                // Update the first cell with row_span, col_span, and merged content
+                table_data.rows[start_row].cells[start_col].row_span = row_span;
+                table_data.rows[start_row].cells[start_col].col_span = col_span;
                 table_data.rows[start_row].cells[start_col].content = merged_content;
                 
                 // Mark other cells as merged by setting them to empty with special markers
@@ -558,8 +567,8 @@ impl Element {
                     for c in start_col..=end_col {
                         if !(r == start_row && c == start_col) {
                             table_data.rows[r].cells[c].content = "".to_string();
-                            table_data.rows[r].cells[c].rowspan = 0; // Mark as merged
-                            table_data.rows[r].cells[c].colspan = 0; // Mark as merged
+                            table_data.rows[r].cells[c].row_span = 0; // Mark as merged
+                            table_data.rows[r].cells[c].col_span = 0; // Mark as merged
                         }
                     }
                 }
@@ -574,22 +583,22 @@ impl Element {
         if let Some(ref mut table_data) = self.table_data {
             if row < table_data.rows.len() && col < table_data.rows[row].cells.len() {
                 let cell = &table_data.rows[row].cells[col];
-                if cell.rowspan > 1 || cell.colspan > 1 {
-                    let rowspan = cell.rowspan as usize;
-                    let colspan = cell.colspan as usize;
+                if cell.row_span > 1 || cell.col_span > 1 {
+                    let row_span = cell.row_span;
+                    let col_span = cell.col_span;
                     
                     // Reset the main cell
-                    table_data.rows[row].cells[col].rowspan = 1;
-                    table_data.rows[row].cells[col].colspan = 1;
+                    table_data.rows[row].cells[col].row_span = 1;
+                    table_data.rows[row].cells[col].col_span = 1;
                     
                     // Restore other cells in the merged area
-                    for r in row..(row + rowspan) {
-                        for c in col..(col + colspan) {
+                    for r in row..(row + row_span) {
+                        for c in col..(col + col_span) {
                             if !(r == row && c == col) {
                                 if r < table_data.rows.len() && c < table_data.rows[r].cells.len() {
                                     table_data.rows[r].cells[c].content = "Cell".to_string();
-                                    table_data.rows[r].cells[c].rowspan = 1;
-                                    table_data.rows[r].cells[c].colspan = 1;
+                                    table_data.rows[r].cells[c].row_span = 1;
+                                    table_data.rows[r].cells[c].col_span = 1;
                                 }
                             }
                         }
@@ -606,7 +615,7 @@ impl Element {
         if let Some(ref table_data) = self.table_data {
             if row < table_data.rows.len() && col < table_data.rows[row].cells.len() {
                 let cell = &table_data.rows[row].cells[col];
-                return cell.rowspan > 1 || cell.colspan > 1;
+                return cell.row_span > 1 || cell.col_span > 1;
             }
         }
         false
@@ -618,7 +627,7 @@ impl Element {
             // Check if this cell is already a main cell
             if row < table_data.rows.len() && col < table_data.rows[row].cells.len() {
                 let cell = &table_data.rows[row].cells[col];
-                if cell.rowspan > 1 || cell.colspan > 1 {
+                if cell.row_span > 1 || cell.col_span > 1 {
                     return Some((row, col));
                 }
             }
@@ -627,9 +636,9 @@ impl Element {
             for r in 0..table_data.rows.len() {
                 for c in 0..table_data.rows[r].cells.len() {
                     let cell = &table_data.rows[r].cells[c];
-                    if cell.rowspan > 1 || cell.colspan > 1 {
-                        let end_row = r + cell.rowspan as usize - 1;
-                        let end_col = c + cell.colspan as usize - 1;
+                    if cell.row_span > 1 || cell.col_span > 1 {
+                        let end_row = r + cell.row_span - 1;
+                        let end_col = c + cell.col_span - 1;
                         if row >= r && row <= end_row && col >= c && col <= end_col {
                             return Some((r, c));
                         }

@@ -87,7 +87,7 @@ const StylePanelInternal: React.FC<StylePanelProps> = ({
         {/* Element Info */}
         <div className="px-2 py-1 border-b border-border bg-muted/30">
           <div className="flex items-center space-x-2 text-xs text-muted-foreground mb-1">
-            <Badge variant="outline" className="text-xs">{element.element_type}</Badge>
+            <Badge variant="outline" className="text-xs">{element.elementType}</Badge>
             <span className="font-mono">#{element.id.slice(-6)}</span>
           </div>
 
