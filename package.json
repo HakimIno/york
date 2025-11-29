@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "build:wasm": "cd src/features/wasm-html-builder/module && node build.js",
+    "build:wasm:check": "cd src/features/wasm-html-builder/module && node build.js --check-only",
+    "build:wasm:clean": "cd src/features/wasm-html-builder/module && node -e \"const fs=require('fs');['pkg','target'].forEach(d=>{try{fs.rmSync(d,{recursive:true,force:true});console.log('✅ Cleaned',d)}catch(e){}})\""
   },
   "dependencies": {
     "@iconify/react": "^6.0.2",

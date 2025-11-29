@@ -174,16 +174,24 @@ const Ruler: React.FC<RulerProps> = ({
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
-    // Set styles - Modern minimal design with theme support
+    // Set styles - Modern minimal design
     const isDark = theme !== "dark";
-    ctx.fillStyle = isDark
-      ? "rgba(30, 30, 30, 0.95)"
-      : "rgba(255, 255, 255, 0.95)";
+    // Transparent background for minimalist look
+    ctx.fillStyle = "rgba(0, 0, 0, 0)";
     ctx.strokeStyle = isDark
-      ? "rgba(255, 255, 255, 0.1)"
-      : "rgba(0, 0, 0, 0.08)";
-    ctx.fillRect(0, 0, width, height);
-    ctx.strokeRect(0, 0, width, height);
+      ? "rgba(255, 255, 255, 0.15)"
+      : "rgba(0, 0, 0, 0.1)";
+
+    // Draw border line only
+    ctx.beginPath();
+    if (orientation === "horizontal") {
+      ctx.moveTo(0, height);
+      ctx.lineTo(width, height);
+    } else {
+      ctx.moveTo(width, 0);
+      ctx.lineTo(width, height);
+    }
+    ctx.stroke();
 
     // Draw marks
     const marks = generateMarks;
@@ -200,108 +208,87 @@ const Ruler: React.FC<RulerProps> = ({
 
       ctx.strokeStyle = isMajor
         ? isDark
-          ? "rgba(255, 255, 255, 0.8)"
-          : "rgba(0, 0, 0, 0.7)"
+          ? "rgba(255, 255, 255, 0.6)"
+          : "rgba(0, 0, 0, 0.5)"
         : isDark
-          ? "rgba(255, 255, 255, 0.5)"
-          : "rgba(0, 0, 0, 0.4)";
-      ctx.lineWidth = isMajor ? 2.0 : 1.5;
+          ? "rgba(255, 255, 255, 0.3)"
+          : "rgba(0, 0, 0, 0.2)";
+      ctx.lineWidth = isMajor ? 1.0 : 0.5; // Thinner lines for minimalist look
 
       if (orientation === "horizontal") {
-        const markHeight = isMajor ? 10 : 6;
+        const markHeight = isMajor ? 8 : 4; // Shorter marks
         ctx.beginPath();
         ctx.moveTo(position, height - markHeight);
         ctx.lineTo(position, height);
         ctx.stroke();
 
-        // Draw label with background for better readability
+        // Draw label
         if (label && isMajor) {
-          const textWidth = ctx.measureText(label).width;
-          const padding = 2;
-          const bgWidth = textWidth + padding * 2;
-          const bgHeight = 10;
-          const bgX = position - bgWidth / 2;
-          const bgY = height - 20;
-
-          // Draw background
           ctx.fillStyle = isDark
-            ? "rgba(30, 30, 30, 0.9)"
-            : "rgba(255, 255, 255, 0.9)";
-          ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
-
-          // Draw text
-          ctx.fillStyle = isDark
-            ? "rgba(255, 255, 255, 0.9)"
-            : "rgba(0, 0, 0, 0.8)";
+            ? "rgba(255, 255, 255, 0.7)"
+            : "rgba(0, 0, 0, 0.6)";
           ctx.font =
-            '9px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            '10px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'; // Clean font
           ctx.textAlign = "center";
-          ctx.fillText(label, position, height - 13);
+          ctx.fillText(label, position + 2, height - 12); // Adjusted position
         }
       } else {
-        const markWidth = isMajor ? 10 : 6;
+        const markWidth = isMajor ? 8 : 4; // Shorter marks
         ctx.beginPath();
         ctx.moveTo(width - markWidth, position);
         ctx.lineTo(width, position);
         ctx.stroke();
 
-        // Draw label with background for better readability
+        // Draw label
         if (label && isMajor) {
-          // Set font first to measure text
+          ctx.fillStyle = isDark
+            ? "rgba(255, 255, 255, 0.7)"
+            : "rgba(0, 0, 0, 0.6)";
           ctx.font =
-            '9px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-          const textWidth = ctx.measureText(label).width;
-          const padding = 2;
-          const bgWidth = textWidth + padding * 2;
-          const bgHeight = 10;
-          const bgX = width - 12 - textWidth;
-          const bgY = position - bgHeight / 2;
-
-          // Draw background
-          ctx.fillStyle = isDark
-            ? "rgba(30, 30, 30, 0.9)"
-            : "rgba(255, 255, 255, 0.9)";
-          ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
-
-          // Draw text
-          ctx.fillStyle = isDark
-            ? "rgba(255, 255, 255, 0.9)"
-            : "rgba(0, 0, 0, 0.8)";
+            '10px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
           ctx.textAlign = "right";
           ctx.textBaseline = "middle";
-          ctx.fillText(label, width - 10, position);
+
+          // Rotate text for vertical ruler to save space and look cleaner
+          ctx.save();
+          ctx.translate(width - 12, position);
+          ctx.rotate(-Math.PI / 2);
+          ctx.fillText(label, 0, 0);
+          ctx.restore();
         }
       }
     });
 
     // Draw unit indicator
-    ctx.fillStyle = isDark ? "rgba(255, 255, 255, 0.6)" : "rgba(0, 0, 0, 0.5)";
+    ctx.fillStyle = isDark ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.3)";
     ctx.font =
-      '7px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      '9px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText(unit, 6, 6);
+    ctx.fillText(unit, 4, 4);
 
     // Draw guideline preview while dragging
     if (isDragging && dragPosition !== null) {
-      ctx.strokeStyle = "#007AFF";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([8, 4]);
+      ctx.strokeStyle = "#00C2FF"; // Cyan for guidelines
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]); // Dashed line
 
+      // LOGIC SWAP: Horizontal Ruler -> Vertical Guide (X-axis)
       if (orientation === "horizontal") {
         const x = dragPosition - scrollLeft;
         if (x >= 0 && x <= width) {
           ctx.beginPath();
           ctx.moveTo(x, 0);
-          ctx.lineTo(x, height);
+          ctx.lineTo(x, height); // Draw vertical line preview on ruler
           ctx.stroke();
         }
       } else {
+        // LOGIC SWAP: Vertical Ruler -> Horizontal Guide (Y-axis)
         const y = dragPosition - scrollTop;
         if (y >= 0 && y <= height) {
           ctx.beginPath();
           ctx.moveTo(0, y);
-          ctx.lineTo(width, y);
+          ctx.lineTo(width, y); // Draw horizontal line preview on ruler
           ctx.stroke();
         }
       }
@@ -333,9 +320,11 @@ const Ruler: React.FC<RulerProps> = ({
     const clientY = e.clientY - rect.top;
 
     let position: number;
+    // LOGIC SWAP: Horizontal Ruler -> Vertical Guide (X-axis)
     if (orientation === "horizontal") {
       position = clientX + scrollLeft;
     } else {
+      // LOGIC SWAP: Vertical Ruler -> Horizontal Guide (Y-axis)
       position = clientY + scrollTop;
     }
 
@@ -343,72 +332,70 @@ const Ruler: React.FC<RulerProps> = ({
     setDragPosition(position);
 
     // Notify parent component about drag state
-    onDragStateChange?.(true, position, orientation);
+    // LOGIC SWAP: Pass swapped orientation
+    const guideOrientation = orientation === "horizontal" ? "vertical" : "horizontal";
+    onDragStateChange?.(true, position, guideOrientation);
 
     // Prevent default to avoid text selection
     e.preventDefault();
-  };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !onGuidelineCreate) return;
+    // Attach window listeners for dragging outside the ruler
+    const handleWindowMouseMove = (moveEvent: MouseEvent) => {
+      const currentRect = canvasRef.current?.getBoundingClientRect();
+      if (!currentRect) return;
 
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+      const moveClientX = moveEvent.clientX - currentRect.left;
+      const moveClientY = moveEvent.clientY - currentRect.top;
 
-    const clientX = e.clientX - rect.left;
-    const clientY = e.clientY - rect.top;
-
-    let position: number;
-    if (orientation === "horizontal") {
-      position = clientX + scrollLeft;
-    } else {
-      position = clientY + scrollTop;
-    }
-
-    setDragPosition(position);
-
-    // Notify parent component about drag position update
-    onDragStateChange?.(true, position, orientation);
-  };
-
-  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !onGuidelineCreate || dragPosition === null) return;
-
-    // Only create guideline if we actually dragged (not just clicked)
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (rect) {
-      const clientX = e.clientX - rect.left;
-      const clientY = e.clientY - rect.top;
-
-      let currentPosition: number;
+      let movePosition: number;
       if (orientation === "horizontal") {
-        currentPosition = clientX + scrollLeft;
+        movePosition = moveClientX + scrollLeft;
       } else {
-        currentPosition = clientY + scrollTop;
+        movePosition = moveClientY + scrollTop;
       }
 
-      // Check if we moved at least 5 pixels to consider it a drag
-      if (Math.abs(currentPosition - dragPosition) >= 5) {
-        onGuidelineCreate(currentPosition, orientation);
+      setDragPosition(movePosition);
+      onDragStateChange?.(true, movePosition, guideOrientation);
+    };
+
+    const handleWindowMouseUp = (upEvent: MouseEvent) => {
+      const currentRect = canvasRef.current?.getBoundingClientRect();
+      if (currentRect) {
+        const upClientX = upEvent.clientX - currentRect.left;
+        const upClientY = upEvent.clientY - currentRect.top;
+
+        let upPosition: number;
+        if (orientation === "horizontal") {
+          upPosition = upClientX + scrollLeft;
+        } else {
+          upPosition = upClientY + scrollTop;
+        }
+
+        // Check if we moved at least 5 pixels to consider it a drag
+        // Note: We compare with the initial position from closure, but for simplicity
+        // we can just check if dragPosition is set. 
+        // Better: use the last known dragPosition which state updates.
+        // Actually, we can just create it at the final position.
+        onGuidelineCreate(upPosition, guideOrientation);
       }
-    }
 
-    setIsDragging(false);
-    setDragPosition(null);
-
-    // Notify parent component about drag end
-    onDragStateChange?.(false, null, orientation);
-  };
-
-  const handleMouseLeave = () => {
-    if (isDragging) {
       setIsDragging(false);
       setDragPosition(null);
+      onDragStateChange?.(false, null, guideOrientation);
 
-      // Notify parent component about drag end
-      onDragStateChange?.(false, null, orientation);
-    }
+      // Remove window listeners
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleWindowMouseMove);
+    window.addEventListener('mouseup', handleWindowMouseUp);
   };
+
+  // No longer needed as we use window listeners
+  // const handleMouseMove = ... 
+  // const handleMouseUp = ...
+  // const handleMouseLeave = ...
 
   if (!showRuler) return null;
 
@@ -423,22 +410,22 @@ const Ruler: React.FC<RulerProps> = ({
         cursor: onGuidelineCreate ? "crosshair" : "default",
         ...(orientation === "horizontal"
           ? {
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "20px",
-            }
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "20px",
+          }
           : {
-              top: 0,
-              right: 0,
-              width: "20px",
-              height: "100%",
-            }),
+            top: 0,
+            right: 0,
+            width: "20px",
+            height: "100%",
+          }),
       }}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
+    // onMouseMove={handleMouseMove} // Handled by window listener
+    // onMouseUp={handleMouseUp}     // Handled by window listener
+    // onMouseLeave={handleMouseLeave} // Handled by window listener
     />
   );
 };

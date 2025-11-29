@@ -234,7 +234,7 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
   const selectedElementIdRef = React.useRef(state.selectedElementId);
   const canUndoRef = React.useRef(undoRedo.canUndo);
   const canRedoRef = React.useRef(undoRedo.canRedo);
-  
+
   React.useEffect(() => {
     elementsRef.current = state.elements;
     selectedElementIdRef.current = state.selectedElementId;
@@ -245,7 +245,7 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      
+
       // Don't interfere with text editing in inputs, textareas, or contentEditable elements
       if (
         target instanceof HTMLTextAreaElement ||
@@ -471,6 +471,7 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
                 showGrid={state.showGrid}
                 snapToGrid={state.snapToGrid}
                 gridSize={state.gridSize}
+                showSpacingGuides={true}
                 onMouseUp={elementHandlers.handleMouseUp}
                 onCanvasClick={elementHandlers.handleCanvasClick}
                 onPositionChange={actions.handlePositionChange}
@@ -604,7 +605,7 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
                   onMergeCells={tableHandlers.handleMergeCells}
                   onUpdateColumnWidth={tableHandlers.handleUpdateColumnWidth}
                   onUpdateRowHeight={tableHandlers.handleUpdateRowHeight}
-                  // Cell selection props moved to Zustand store
+                // Cell selection props moved to Zustand store
                 />
               </div>
             )}
@@ -635,7 +636,7 @@ const WasmHtmlBuilder: React.FC<WasmHtmlBuilderProps> = ({
                   onMergeCells={tableHandlers.handleMergeCells}
                   onUpdateColumnWidth={tableHandlers.handleUpdateColumnWidth}
                   onUpdateRowHeight={tableHandlers.handleUpdateRowHeight}
-                  // Cell selection props moved to Zustand store
+                // Cell selection props moved to Zustand store
                 />
               </div>
             </div>

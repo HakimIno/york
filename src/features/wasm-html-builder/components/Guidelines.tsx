@@ -38,16 +38,16 @@ const Guidelines: React.FC<GuidelinesProps> = ({
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '100%',
-        height: '100%',
+        width: canvasWidth,   // Use explicit width
+        height: canvasHeight, // Use explicit height
         pointerEvents: 'none',
         zIndex: 5,
       }}
     >
       {guidelines.map((guideline) => {
         const isHorizontal = guideline.orientation === 'horizontal';
-        const position = isHorizontal 
-          ? guideline.position - scrollTop 
+        const position = isHorizontal
+          ? guideline.position - scrollTop
           : guideline.position - scrollLeft;
 
         // Don't render guidelines that are outside the visible area
@@ -61,28 +61,30 @@ const Guidelines: React.FC<GuidelinesProps> = ({
             className="guideline"
             style={{
               position: 'absolute',
-              backgroundColor: guideline.color || '#007AFF',
-              opacity: 0.7,
+              // Use border instead of background for dashed lines
+              borderLeft: !isHorizontal ? '1px dashed #00C2FF' : 'none',
+              borderTop: isHorizontal ? '1px dashed #00C2FF' : 'none',
+              opacity: 0.8,
               pointerEvents: 'auto',
-              cursor: 'pointer',
+              cursor: isHorizontal ? 'row-resize' : 'col-resize',
               ...(isHorizontal
                 ? {
-                    top: position,
-                    left: 0,
-                    width: '100%',
-                    height: '1px',
-                  }
+                  top: position,
+                  left: 0,
+                  width: '100%',
+                  height: '1px',
+                }
                 : {
-                    left: position,
-                    top: 0,
-                    width: '1px',
-                    height: '100%',
-                  }
+                  left: position,
+                  top: 0,
+                  width: '1px',
+                  height: '100%',
+                }
               ),
             }}
             onClick={() => onGuidelineClick?.(guideline)}
             onDoubleClick={() => onGuidelineDoubleClick?.(guideline)}
-            title={`${guideline.orientation} guideline at ${guideline.position}px`}
+            title={`${guideline.orientation} guideline at ${Math.round(guideline.position)}px`}
           />
         );
       })}
@@ -93,22 +95,24 @@ const Guidelines: React.FC<GuidelinesProps> = ({
           className="guideline-drag-preview"
           style={{
             position: 'absolute',
-            backgroundColor: '#007AFF',
+            // Match the dashed style for preview
+            borderLeft: dragOrientation === 'vertical' ? '1px dashed #00C2FF' : 'none',
+            borderTop: dragOrientation === 'horizontal' ? '1px dashed #00C2FF' : 'none',
             opacity: 0.8,
             pointerEvents: 'none',
             ...(dragOrientation === 'horizontal'
               ? {
-                  left: dragPosition - scrollLeft,
-                  top: 0,
-                  width: '2px',
-                  height: '100%',
-                }
+                left: 0,
+                top: dragPosition - scrollTop,
+                width: '100%',
+                height: '1px',
+              }
               : {
-                  top: dragPosition - scrollTop,
-                  left: 0,
-                  width: '100%',
-                  height: '2px',
-                }
+                top: 0,
+                left: dragPosition - scrollLeft,
+                width: '1px',
+                height: '100%',
+              }
             ),
           }}
         />

@@ -4,10 +4,12 @@ import { PaperConfig } from '../types/paper';
 import { useViewportCulling } from '../hooks/useViewportCulling';
 import { useElementVirtualScrolling } from '../hooks/useVirtualScrolling';
 import { useConditionalOptimization } from '../hooks/useLightweightOptimization';
+import { useThrottledGridLines } from '../hooks/useThrottledGridLines';
 import ResizableElement from './element';
 import Paper from './Paper';
 import Ruler from './Ruler';
 import Guidelines from './Guidelines';
+import SpacingGuides from './SpacingGuides';
 import { useGuidelines } from '../hooks/useGuidelines';
 
 interface CanvasProps {
@@ -26,6 +28,7 @@ interface CanvasProps {
   rulerUnit?: 'px' | 'mm' | 'cm' | 'in';
   showGrid?: boolean;
   snapToGrid?: boolean;
+  showSpacingGuides?: boolean;
   gridSize?: number;
   onMouseUp: () => void;
   onCanvasClick: (e: React.MouseEvent) => void;
@@ -79,6 +82,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
   showGrid = false,
   snapToGrid = false,
   gridSize = 20,
+  showSpacingGuides = true,
   onMouseUp,
   onCanvasClick,
   onPositionChange,
@@ -115,10 +119,10 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
 
   // Viewport culling for performance optimization
   const canvasContainerRef = useRef<HTMLDivElement>(null);
-  const { 
-    visibleElements, 
+  const {
+    visibleElements,
     metrics: viewportMetrics,
-    recalculateViewport 
+    recalculateViewport
   } = useViewportCulling(elements, {
     containerRef: canvasContainerRef as React.RefObject<HTMLElement>,
     zoom: currentZoom,
@@ -184,6 +188,14 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
   // Canvas state
   const [scrollPosition, setScrollPosition] = useState({ left: 0, top: 0 });
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const [scrollSize, setScrollSize] = useState({ width: 0, height: 0 }); // Track full scrollable size
+  const [localRulerUnit, setLocalRulerUnit] = useState<'px' | 'mm' | 'cm' | 'in'>(rulerUnit); // Local unit state
+
+  // Sync local unit with prop if it changes
+  useEffect(() => {
+    setLocalRulerUnit(rulerUnit);
+  }, [rulerUnit]);
+
   const theme = 'dark';
   // Handle wheel zoom
   const handleWheel = (e: React.WheelEvent) => {
@@ -213,6 +225,10 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
       if (canvasContainerRef.current) {
         const rect = canvasContainerRef.current.getBoundingClientRect();
         setCanvasSize({ width: rect.width, height: rect.height });
+        setScrollSize({
+          width: canvasContainerRef.current.scrollWidth,
+          height: canvasContainerRef.current.scrollHeight
+        });
         setScrollPosition({
           left: canvasContainerRef.current.scrollLeft,
           top: canvasContainerRef.current.scrollTop
@@ -247,7 +263,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
         resizeObserver.disconnect();
       };
     }
-  }, []);
+  }, [elements, paperConfigs]); // Re-run when content changes to update scrollSize
 
   // Recalculate viewport when zoom changes
   useEffect(() => {
@@ -264,7 +280,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
           // Spatial index bounds updated silently
         }
       }, 100); // Debounce the update
-      
+
       return () => clearTimeout(timeoutId);
     }
   }, [canvasSize.width, canvasSize.height, onSpatialQuery]);
@@ -277,7 +293,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
     const mmPerInch = 25.4;
     const cmPerInch = 2.54;
 
-    switch (rulerUnit) {
+    switch (localRulerUnit) {
       case 'mm':
         return (px: number) => (px / dpi) * mmPerInch;
       case 'cm':
@@ -288,7 +304,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
       default:
         return (px: number) => px;
     }
-  }, [rulerUnit]);
+  }, [localRulerUnit]);
 
   // Convert unit to pixels for grid
   const convertFromUnit = useMemo(() => {
@@ -296,7 +312,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
     const mmPerInch = 25.4;
     const cmPerInch = 2.54;
 
-    switch (rulerUnit) {
+    switch (localRulerUnit) {
       case 'mm':
         return (value: number) => (value / mmPerInch) * dpi;
       case 'cm':
@@ -307,32 +323,22 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
       default:
         return (value: number) => value;
     }
-  }, [rulerUnit]);
+  }, [localRulerUnit]);
 
-  // Generate grid lines
-  const gridLines = useMemo(() => {
-    if (!showGrid) return { horizontal: [], vertical: [] };
-
-    const gridSizePx = convertFromUnit(gridSize);
-    const horizontal: number[] = [];
-    const vertical: number[] = [];
-
-    // Generate horizontal lines
-    for (let y = 0; y <= canvasSize.height + scrollPosition.top; y += gridSizePx) {
-      horizontal.push(y - scrollPosition.top);
-    }
-
-    // Generate vertical lines
-    for (let x = 0; x <= canvasSize.width + scrollPosition.left; x += gridSizePx) {
-      vertical.push(x - scrollPosition.left);
-    }
-
-    return { horizontal, vertical };
-  }, [showGrid, gridSize, canvasSize, scrollPosition, convertFromUnit]);
+  // OPTIMIZED: Throttled grid line generation (prevents recalculation on every scroll/resize)
+  const gridLines = useThrottledGridLines({
+    showGrid,
+    gridSize,
+    canvasSize,
+    scrollPosition,
+    convertFromUnit,
+    throttleMs: 100, // 100ms throttle for smooth performance
+  });
 
 
 
   // Memoize expensive computations with viewport culling
+  // OPTIMIZED: Only recalculate when paperConfigs or optimizedElements change
   const elementsByPaper = useMemo(() => {
     if (paperConfigs.length === 0) return {};
 
@@ -364,8 +370,9 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
     });
 
     return result;
-  }, [paperConfigs, visibleElements, elements]);
+  }, [paperConfigs, optimizedElements, elements]);
 
+  // OPTIMIZED: Only recalculate when paperConfigs or optimizedElements change
   const orphanedElements = useMemo(() => {
     if (paperConfigs.length === 0) return [];
 
@@ -389,12 +396,13 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
         );
       });
     });
-  }, [paperConfigs, visibleElements, elements]);
+  }, [paperConfigs, optimizedElements, elements]);
 
+  // OPTIMIZED: Only recalculate when optimizedElements change
   const uniqueElements = useMemo(() => {
     // Use optimized elements for better performance
     const elementsToProcess = optimizedElements.length > 0 ? optimizedElements : elements;
-    
+
     return elementsToProcess.filter((element, index, arr) => {
       // Filter out duplicate IDs, keep only the first occurrence
       const firstIndex = arr.findIndex(el => el.id === element.id);
@@ -406,8 +414,17 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
       }
       return true;
     });
-  }, [visibleElements, elements]);
+  }, [optimizedElements, elements]);
 
+  // Handle unit change
+  const handleUnitChange = useCallback(() => {
+    setLocalRulerUnit(prev => {
+      const units: ('px' | 'mm' | 'cm' | 'in')[] = ['px', 'mm', 'cm', 'in'];
+      const currentIndex = units.indexOf(prev);
+      const nextIndex = (currentIndex + 1) % units.length;
+      return units[nextIndex];
+    });
+  }, []);
 
   return (
     <div className="relative w-full h-full flex flex-col">
@@ -415,7 +432,11 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
       {showRuler && (
         <>
           {/* Ruler Corner */}
-          <div className="ruler-corner" />
+          <div
+            className="ruler-corner cursor-pointer hover:bg-white/10 transition-colors"
+            onClick={handleUnitChange}
+            title={`Current unit: ${localRulerUnit}. Click to change.`}
+          />
 
           {/* Horizontal Ruler */}
           <div className="relative h-5 ml-5">
@@ -425,7 +446,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
               scrollLeft={scrollPosition.left}
               scrollTop={0}
               zoom={1}
-              unit={rulerUnit}
+              unit={localRulerUnit}
               showRuler={showRuler}
               orientation="horizontal"
               className="absolute top-0 left-0"
@@ -442,7 +463,7 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
               scrollLeft={0}
               scrollTop={scrollPosition.top}
               zoom={1}
-              unit={rulerUnit}
+              unit={localRulerUnit}
               showRuler={showRuler}
               orientation="vertical"
               className="absolute top-0 left-0"
@@ -452,39 +473,39 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
           </div>
         </>
       )}
- {/* Grid Overlay - Positioned within canvas container */}
- {showGrid && (
-          <div className="absolute inset-0 pointer-events-none z-50">
-            <svg className="w-full h-full">
-              {/* Horizontal grid lines */}
-              {gridLines.horizontal.map((y, index) => (
-                <line
-                  key={`h-${index}`}
-                  x1="0"
-                  y1={y}
-                  x2="100%"
-                  y2={y}
-                  className="grid-line"
-                  stroke={theme !== 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}
-                  strokeWidth="1"
-                />
-              ))}
-              {/* Vertical grid lines */}
-              {gridLines.vertical.map((x, index) => (
-                <line
-                  key={`v-${index}`}
-                  x1={x}
-                  y1="0"
-                  x2={x}
-                  y2="100%"
-                  className="grid-line"
-                  stroke={theme !== 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}
-                  strokeWidth="1"
-                />
-              ))}
-            </svg>
-          </div>
-        )}
+      {/* Grid Overlay - Positioned within canvas container */}
+      {showGrid && (
+        <div className="absolute inset-0 pointer-events-none z-50">
+          <svg className="w-full h-full">
+            {/* Horizontal grid lines */}
+            {gridLines.horizontal.map((y, index) => (
+              <line
+                key={`h-${index}`}
+                x1="0"
+                y1={y}
+                x2="100%"
+                y2={y}
+                className="grid-line"
+                stroke={theme !== 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}
+                strokeWidth="1"
+              />
+            ))}
+            {/* Vertical grid lines */}
+            {gridLines.vertical.map((x, index) => (
+              <line
+                key={`v-${index}`}
+                x1={x}
+                y1="0"
+                x2={x}
+                y2="100%"
+                className="grid-line"
+                stroke={theme !== 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}
+                strokeWidth="1"
+              />
+            ))}
+          </svg>
+        </div>
+      )}
       {/* Canvas Container */}
       <div
         ref={canvasContainerRef}
@@ -497,8 +518,8 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
         {/* Guidelines */}
         <Guidelines
           guidelines={guidelines}
-          canvasWidth={canvasSize.width}
-          canvasHeight={canvasSize.height}
+          canvasWidth={Math.max(canvasSize.width, scrollSize.width)}
+          canvasHeight={Math.max(canvasSize.height, scrollSize.height)}
           scrollLeft={scrollPosition.left}
           scrollTop={scrollPosition.top}
           showGuidelines={guidelineConfig.showGuidelines}
@@ -508,7 +529,16 @@ const Canvas: React.FC<CanvasProps> = React.memo(({
           dragPosition={rulerDragState.position}
           dragOrientation={rulerDragState.orientation || undefined}
         />
-       
+
+        {/* Smart Spacing Guides - Auto-measure distances between elements */}
+        <SpacingGuides
+          elements={elements}
+          selectedElementId={selectedElementId}
+          showSpacingGuides={showSpacingGuides}
+          zoom={currentZoom}
+          scrollPosition={scrollPosition}
+        />
+
         {/* Papers */}
         {paperConfigs.length > 0 ? (
           // Use new Paper components with enhanced functionality

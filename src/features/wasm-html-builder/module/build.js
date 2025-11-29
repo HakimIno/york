@@ -154,7 +154,7 @@ function validateBuild() {
   log('🔍 Validating build output...', 'cyan');
   
   const requiredFiles = [
-    'pkg/html_builder_core.wasm',
+    'pkg/html_builder_core_bg.wasm',  // wasm-pack creates _bg.wasm file
     'pkg/html_builder_core.js',
     'pkg/html_builder_core.d.ts',
     'pkg/package.json'
@@ -169,7 +169,7 @@ function validateBuild() {
   }
   
   // Check file sizes
-  const wasmFile = 'pkg/html_builder_core.wasm';
+  const wasmFile = 'pkg/html_builder_core_bg.wasm';
   if (fs.existsSync(wasmFile)) {
     const stats = fs.statSync(wasmFile);
     const sizeKB = Math.round(stats.size / 1024);

@@ -130,7 +130,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
             }
             // Focus and place cursor at the end
             editableRef.current.focus();
-            
+
             // Place cursor at end of content
             const range = document.createRange();
             const sel = window.getSelection();
@@ -146,11 +146,11 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     // Check active formats
     const checkActiveFormats = useCallback(() => {
         const formats = new Set<string>();
-        
+
         if (document.queryCommandState('bold')) formats.add('bold');
         if (document.queryCommandState('italic')) formats.add('italic');
         if (document.queryCommandState('underline')) formats.add('underline');
-        
+
         setActiveFormats(formats);
     }, []);
 
@@ -245,13 +245,13 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
         if (command === 'foreColor' || command === 'backColor') {
             const range = selection.getRangeAt(0);
             const span = document.createElement('span');
-            
+
             if (command === 'foreColor') {
                 span.style.color = value || '#000000';
             } else if (command === 'backColor') {
                 span.style.backgroundColor = value || 'transparent';
             }
-            
+
             try {
                 range.surroundContents(span);
             } catch (e) {
@@ -283,14 +283,14 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     // Apply inline style to selected text (optimized)
     const applyInlineStyle = useCallback((styleKey: string, styleValue: string) => {
         if (!editableRef.current) return;
-        
+
         const selection = window.getSelection();
         if (!selection || selection.isCollapsed) return;
 
         const range = selection.getRangeAt(0);
         const span = document.createElement('span');
         span.style[styleKey as any] = styleValue;
-        
+
         try {
             range.surroundContents(span);
         } catch (e) {
@@ -351,7 +351,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     const handleEditableInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
         // Store value before requestAnimationFrame to avoid event pooling issues
         const html = e.currentTarget.innerHTML;
-        
+
         // Use requestAnimationFrame to batch updates
         requestAnimationFrame(() => {
             setEditContent(html);
@@ -389,11 +389,11 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     const handleElementKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
             if (!isSelected || isEditing || isLocked) return;
-            
-                if (e.key === 'Delete' || e.key === 'Backspace') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onDelete(element.id);
+
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                e.preventDefault();
+                e.stopPropagation();
+                onDelete(element.id);
             }
         },
         [isSelected, isEditing, isLocked, element.id, onDelete]
@@ -643,7 +643,7 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
                 onMergeCells={onMergeCells || (() => { })}
                 onUpdateColumnWidth={onUpdateColumnWidth || (() => { })}
                 onUpdateRowHeight={onUpdateRowHeight || (() => { })}
-                // Cell selection props moved to Zustand store
+            // Cell selection props moved to Zustand store
             />
         );
     }
@@ -901,11 +901,10 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
                             >
                                 {/* Bold */}
                                 <button
-                                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                        activeFormats.has('bold')
-                                            ? 'bg-blue-50 text-blue-600'
-                                            : 'hover:bg-gray-100 text-gray-600'
-                                    }`}
+                                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeFormats.has('bold')
+                                        ? 'bg-blue-50 text-blue-600'
+                                        : 'hover:bg-gray-100 text-gray-600'
+                                        }`}
                                     onClick={() => {
                                         applyFormatCommand('bold');
                                         checkActiveFormats();
@@ -917,11 +916,10 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
 
                                 {/* Italic */}
                                 <button
-                                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                        activeFormats.has('italic')
-                                            ? 'bg-blue-50 text-blue-600'
-                                            : 'hover:bg-gray-100 text-gray-600'
-                                    }`}
+                                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeFormats.has('italic')
+                                        ? 'bg-blue-50 text-blue-600'
+                                        : 'hover:bg-gray-100 text-gray-600'
+                                        }`}
                                     onClick={() => {
                                         applyFormatCommand('italic');
                                         checkActiveFormats();
@@ -933,11 +931,10 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
 
                                 {/* Underline */}
                                 <button
-                                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                        activeFormats.has('underline')
-                                            ? 'bg-blue-50 text-blue-600'
-                                            : 'hover:bg-gray-100 text-gray-600'
-                                    }`}
+                                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeFormats.has('underline')
+                                        ? 'bg-blue-50 text-blue-600'
+                                        : 'hover:bg-gray-100 text-gray-600'
+                                        }`}
                                     onClick={() => {
                                         applyFormatCommand('underline');
                                         checkActiveFormats();
@@ -1074,4 +1071,164 @@ const ResizableElement: React.FC<ResizableElementProps> = ({
     );
 };
 
-export default ResizableElement;
+// Custom comparison function for React.memo
+// This prevents unnecessary re-renders by comparing only the props that matter
+const arePropsEqual = (
+    prevProps: ResizableElementProps,
+    nextProps: ResizableElementProps
+): boolean => {
+    // Quick reference checks for callbacks (if they're the same reference, skip deep comparison)
+    const callbacksUnchanged =
+        prevProps.onPositionChange === nextProps.onPositionChange &&
+        prevProps.onSizeChange === nextProps.onSizeChange &&
+        prevProps.onContentChange === nextProps.onContentChange &&
+        prevProps.onStyleChange === nextProps.onStyleChange &&
+        prevProps.onSelect === nextProps.onSelect &&
+        prevProps.onStartEdit === nextProps.onStartEdit &&
+        prevProps.onEndEdit === nextProps.onEndEdit &&
+        prevProps.onDelete === nextProps.onDelete &&
+        prevProps.onStartDrag === nextProps.onStartDrag &&
+        prevProps.onToggleLock === nextProps.onToggleLock &&
+        prevProps.onCopy === nextProps.onCopy &&
+        prevProps.onTableCellChange === nextProps.onTableCellChange &&
+        prevProps.onAddRow === nextProps.onAddRow &&
+        prevProps.onRemoveRow === nextProps.onRemoveRow &&
+        prevProps.onAddColumn === nextProps.onAddColumn &&
+        prevProps.onRemoveColumn === nextProps.onRemoveColumn &&
+        prevProps.onMergeCells === nextProps.onMergeCells &&
+        prevProps.onUpdateColumnWidth === nextProps.onUpdateColumnWidth &&
+        prevProps.onUpdateRowHeight === nextProps.onUpdateRowHeight;
+
+    // If callbacks changed, re-render (though this should rarely happen with useCallback)
+    if (!callbacksUnchanged) {
+        return false;
+    }
+
+    // Compare boolean flags
+    if (
+        prevProps.isSelected !== nextProps.isSelected ||
+        prevProps.isEditing !== nextProps.isEditing ||
+        prevProps.isDragging !== nextProps.isDragging ||
+        prevProps.isLocked !== nextProps.isLocked ||
+        prevProps.showBorders !== nextProps.showBorders
+    ) {
+        return false;
+    }
+
+    // Deep comparison of element properties that affect rendering
+    const prevEl = prevProps.element;
+    const nextEl = nextProps.element;
+
+    // Compare element ID (if ID changed, it's a different element)
+    if (prevEl.id !== nextEl.id) {
+        return false;
+    }
+
+    // Compare position and size
+    if (
+        prevEl.x !== nextEl.x ||
+        prevEl.y !== nextEl.y ||
+        prevEl.width !== nextEl.width ||
+        prevEl.height !== nextEl.height ||
+        prevEl.z_index !== nextEl.z_index
+    ) {
+        return false;
+    }
+
+    // Compare content
+    if (prevEl.content !== nextEl.content) {
+        return false;
+    }
+
+    // Compare element type
+    if (prevEl.element_type !== nextEl.element_type) {
+        return false;
+    }
+
+    // Deep compare style object (only properties that affect rendering)
+    const prevStyle = prevEl.style;
+    const nextStyle = nextEl.style;
+
+    if (
+        prevStyle.fontSize !== nextStyle.fontSize ||
+        prevStyle.fontFamily !== nextStyle.fontFamily ||
+        prevStyle.fontWeight !== nextStyle.fontWeight ||
+        prevStyle.fontStyle !== nextStyle.fontStyle ||
+        prevStyle.color !== nextStyle.color ||
+        prevStyle.backgroundColor !== nextStyle.backgroundColor ||
+        prevStyle.textAlign !== nextStyle.textAlign ||
+        prevStyle.padding !== nextStyle.padding ||
+        prevStyle.borderRadius !== nextStyle.borderRadius ||
+        prevStyle.borderWidth !== nextStyle.borderWidth ||
+        prevStyle.borderColor !== nextStyle.borderColor
+    ) {
+        return false;
+    }
+
+    // Compare fill and stroke for shapes
+    if (prevStyle.fill || nextStyle.fill) {
+        if (!prevStyle.fill || !nextStyle.fill) {
+            return false;
+        }
+        if (
+            prevStyle.fill.enabled !== nextStyle.fill.enabled ||
+            prevStyle.fill.color !== nextStyle.fill.color ||
+            prevStyle.fill.opacity !== nextStyle.fill.opacity
+        ) {
+            return false;
+        }
+    }
+
+    if (prevStyle.stroke || nextStyle.stroke) {
+        if (!prevStyle.stroke || !nextStyle.stroke) {
+            return false;
+        }
+        if (
+            prevStyle.stroke.enabled !== nextStyle.stroke.enabled ||
+            prevStyle.stroke.color !== nextStyle.stroke.color ||
+            prevStyle.stroke.width !== nextStyle.stroke.width ||
+            prevStyle.stroke.style !== nextStyle.stroke.style ||
+            prevStyle.stroke.opacity !== nextStyle.stroke.opacity
+        ) {
+            return false;
+        }
+    }
+
+    // Compare table data if it's a table element
+    if (prevEl.element_type === 'table' && nextEl.element_type === 'table') {
+        // For tables, we need to compare the table data structure
+        const prevTableData = prevEl.table_data;
+        const nextTableData = nextEl.table_data;
+
+        if (!prevTableData || !nextTableData) {
+            return prevTableData === nextTableData;
+        }
+
+        // Compare basic table properties
+        if (
+            prevTableData.columns !== nextTableData.columns ||
+            prevTableData.header_rows !== nextTableData.header_rows ||
+            prevTableData.footer_rows !== nextTableData.footer_rows
+        ) {
+            return false;
+        }
+
+        // Compare rows (shallow comparison of array reference)
+        // If rows array reference changed, re-render
+        if (prevTableData.rows !== nextTableData.rows) {
+            return false;
+        }
+
+        // Compare column widths array reference
+        if (prevTableData.column_widths !== nextTableData.column_widths) {
+            return false;
+        }
+    }
+
+
+    // If all checks passed, props are equal - skip re-render
+    return true;
+};
+
+// Export memoized component with custom comparison
+export default React.memo(ResizableElement, arePropsEqual);
